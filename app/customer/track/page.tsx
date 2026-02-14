@@ -26,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { ClientOnly } from "@/components/client-only";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -115,10 +116,15 @@ function TrackingTimeline({ status, method, createdAt }: { status: string; metho
                 {step.description}
               </p>
               {isCurrent && (
-                <div className="mt-2 flex items-center gap-2 text-xs text-slate-500">
+                <ClientOnly fallback={<div className="mt-2 flex items-center gap-2 text-xs text-slate-500">
                   <Clock className="h-3 w-3" />
-                  <span>Updated {createdAt ? new Date(createdAt).toLocaleDateString() : new Date().toLocaleDateString()}</span>
-                </div>
+                  <span>Updated</span>
+                </div>}>
+                  <div className="mt-2 flex items-center gap-2 text-xs text-slate-500">
+                    <Clock className="h-3 w-3" />
+                    <span>Updated {createdAt ? new Date(createdAt).toLocaleDateString('en-US') : new Date().toLocaleDateString('en-US')}</span>
+                  </div>
+                </ClientOnly>
               )}
             </div>
           </div>
@@ -146,13 +152,15 @@ function ReturnCard({ ret }: { ret: any }) {
                 <h3 className="font-semibold text-slate-900 truncate">
                   Return #{ret._id.slice(-8).toUpperCase()}
                 </h3>
-                <p className="text-sm text-slate-500">
-                  {new Date(ret.createdAt).toLocaleDateString("en-US", { 
-                    month: "short", 
-                    day: "numeric", 
-                    year: "numeric" 
-                  })}
-                </p>
+                <ClientOnly fallback={<p className="text-sm text-slate-500">Loading date...</p>}>
+                  <p className="text-sm text-slate-500">
+                    {new Date(ret.createdAt).toLocaleDateString("en-US", { 
+                      month: "short", 
+                      day: "numeric", 
+                      year: "numeric" 
+                    })}
+                  </p>
+                </ClientOnly>
               </div>
             </div>
 

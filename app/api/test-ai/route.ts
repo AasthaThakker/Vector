@@ -45,6 +45,9 @@ export async function GET() {
       const result = await validateReturnWithGemini(testCase.imageUrl, testCase.description);
       const endTime = Date.now();
       
+      console.log(`   ⏱️  Processing time: ${endTime - startTime}ms`);
+      console.log(`   📊 Result: Match=${result.match}, Confidence=${result.confidence.toFixed(2)}`);
+      
       const testResult = {
         name: testCase.name,
         description: testCase.description,
