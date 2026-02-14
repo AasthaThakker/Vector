@@ -350,7 +350,7 @@ export default function WarehouseDashboard() {
                     >
                       <div>
                         <p className="font-medium text-slate-900">{ret.reason}</p>
-                        <p className="text-sm text-slate-500">ID: {ret._id.slice(-8)}</p>
+                        <p className="text-sm text-slate-500">ID: {ret._id.slice(-8)} • Price: ₹{ret.price?.toLocaleString() || '0'}</p>
                       </div>
                       <div className="flex items-center gap-2">
                         <StatusBadge status={ret.status} />
@@ -400,7 +400,7 @@ export default function WarehouseDashboard() {
                     >
                       <div>
                         <p className="font-medium text-slate-900">{ret.reason}</p>
-                        <p className="text-sm text-slate-500">ID: {ret._id.slice(-8)}</p>
+                        <p className="text-sm text-slate-500">ID: {ret._id.slice(-8)} • Price: ₹{ret.price?.toLocaleString() || '0'}</p>
                       </div>
                       <div className="flex gap-2">
                         <Button
@@ -604,7 +604,7 @@ export default function WarehouseDashboard() {
           </div>
 
           {/* Pagination */}
-          {inventoryData && inventoryData.pagination.pages > 1 && (
+          {inventoryData && inventoryData.pagination && inventoryData.pagination.pages > 1 && (
             <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/50">
               <div className="flex items-center justify-between">
                 <p className="text-sm text-slate-600">
@@ -624,13 +624,13 @@ export default function WarehouseDashboard() {
                     Previous
                   </Button>
                   <span className="text-sm text-slate-600 px-3">
-                    Page {currentPage} of {inventoryData.pagination.pages}
+                    Page {currentPage} of {inventoryData.pagination?.pages || 1}
                   </span>
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setCurrentPage(prev => Math.min(inventoryData.pagination.pages, prev + 1))}
-                    disabled={currentPage === inventoryData.pagination.pages}
+                    onClick={() => setCurrentPage(prev => Math.min(inventoryData.pagination?.pages || 1, prev + 1))}
+                    disabled={currentPage === (inventoryData.pagination?.pages || 1)}
                     className="border-slate-200 hover:bg-slate-100"
                   >
                     Next

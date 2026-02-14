@@ -55,6 +55,7 @@ export default function AdminReturns() {
   status: string; 
   returnMethod: string; 
   createdAt: string;
+  price: number;
   qrCodeData?: string;
   aiAnalysis?: string;
   orderId?: { products?: { name: string }[] };
@@ -124,6 +125,7 @@ export default function AdminReturns() {
                   status: string;
                   returnMethod: string;
                   createdAt: string;
+                  price: number;
                   qrCodeData?: string;
                   orderId?: { products?: { name: string }[] };
                 }) => (
@@ -148,10 +150,15 @@ export default function AdminReturns() {
                             </div>
                           )}
                         </div>
-                        <p className="mt-1 text-xs text-muted-foreground capitalize">
-                          {ret.returnMethod} &middot; {new Date(ret.createdAt).toLocaleDateString()} &middot;
-                          ID: {ret._id.slice(-8)}
-                        </p>
+                        <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
+                          <span className="capitalize">{ret.returnMethod}</span>
+                          <span>•</span>
+                          <span>{new Date(ret.createdAt).toLocaleDateString()}</span>
+                          <span>•</span>
+                          <span>ID: {ret._id.slice(-8)}</span>
+                          <span>•</span>
+                          <span className="font-semibold text-foreground">₹{ret.price.toLocaleString()}</span>
+                        </div>
                       </div>
                       <Eye className="h-4 w-4 text-muted-foreground" />
                     </button>
@@ -174,6 +181,10 @@ export default function AdminReturns() {
                 <div>
                   <p className="text-muted-foreground">Reason</p>
                   <p className="text-foreground">{selectedReturn.reason}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Product Price</p>
+                  <p className="font-semibold text-foreground">₹{selectedReturn.price.toLocaleString()}</p>
                 </div>
                 <div>
                   <p className="text-muted-foreground">Method</p>

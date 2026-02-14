@@ -2,7 +2,7 @@ import mongoose, { Schema, Document, Model } from "mongoose";
 
 export interface IInventory extends Document {
   productName: string;
-  category: "tshirt" | "shirt" | "pants" | "jeans" | "dress" | "jacket" | "hoodie" | "sweater" | "shorts" | "skirt" | "blazer" | "coat" | "polo" | "tanktop" | "cardigan";
+  category: "tshirt" | "shirt" | "pants" | "jeans" | "dress" | "jacket" | "hoodie" | "sweater" | "shorts" | "skirt" | "blazer" | "coat" | "polo" | "tanktop" | "cardigan" | "shoes";
   subcategory?: string;
   brand: string;
   size: string;
@@ -26,7 +26,7 @@ export interface IInventory extends Document {
 const InventorySchema = new Schema<IInventory>(
   {
     productName: { type: String, required: true },
-    category: { type: String, enum: ["tshirt", "shirt", "pants", "jeans", "dress", "jacket", "hoodie", "sweater", "shorts", "skirt", "blazer", "coat", "polo", "tanktop", "cardigan"], required: true },
+    category: { type: String, enum: ["tshirt", "shirt", "pants", "jeans", "dress", "jacket", "hoodie", "sweater", "shorts", "skirt", "blazer", "coat", "polo", "tanktop", "cardigan", "shoes"], required: true },
     subcategory: { type: String },
     brand: { type: String, required: true },
     size: { type: String, required: true },

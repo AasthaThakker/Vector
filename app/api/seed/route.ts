@@ -7,13 +7,17 @@ import Return from "@/models/Return";
 import Inventory from "@/models/Inventory";
 import AutomationLog from "@/models/AutomationLog";
 
-export async function POST() {
+export async function POST(request: Request) {
   try {
     await connectDB();
 
+    // Check if force parameter is provided
+    const body = await request.json().catch(() => ({}));
+    const { force } = body;
+
     // Check if data already exists
     const existingUsers = await User.countDocuments();
-    if (existingUsers > 0) {
+    if (existingUsers > 0 && !force) {
       return NextResponse.json({
         message: "Database already seeded. Use these credentials to log in:",
         credentials: {
@@ -30,6 +34,15 @@ export async function POST() {
           logistics: { email: "logistics@vector.com", password: "password123" },
         },
       });
+    }
+
+    // If force is true, clear existing data
+    if (force) {
+      await User.deleteMany({});
+      await Order.deleteMany({});
+      await Return.deleteMany({});
+      await AutomationLog.deleteMany({});
+      console.log("Cleared existing data for reseeding");
     }
 
     // Hash password for demo users
@@ -119,6 +132,7 @@ export async function POST() {
         orderId: orders[0]._id, // First order from first customer
         userId: customerUsers[0]._id,
         productId: orders[0].products[0].productId,
+        price: orders[0].products[0].price,
         reason: "wrong_size",
         description: "Ordered size 10 but fits like a size 9. Need size 11 instead.",
         imageUrl: "",
@@ -132,6 +146,7 @@ export async function POST() {
         orderId: orders[1]._id, // Second order from first customer
         userId: customerUsers[0]._id,
         productId: orders[1].products[0].productId,
+        price: orders[1].products[0].price,
         reason: "defective",
         description: "The stitching on the collar came loose after first wash.",
         imageUrl: "",
@@ -145,6 +160,7 @@ export async function POST() {
         orderId: orders[8]._id, // Order from second customer
         userId: customerUsers[1]._id,
         productId: orders[8].products[0].productId,
+        price: orders[8].products[0].price,
         reason: "wrong_item",
         description: "Received a different color than ordered.",
         imageUrl: "",
@@ -158,6 +174,7 @@ export async function POST() {
         orderId: orders[15]._id, // Order from third customer
         userId: customerUsers[2]._id,
         productId: orders[15].products[0].productId,
+        price: orders[15].products[0].price,
         reason: "quality_issue",
         description: "Material quality is not as expected.",
         imageUrl: "",
@@ -171,20 +188,244 @@ export async function POST() {
 
     // Create demo inventory for all products
     await Inventory.insertMany([
-      { productName: "Classic Cotton Tee", category: "tshirt", size: "L", color: "Black", stock: 150 },
-      { productName: "Classic Cotton Tee", category: "tshirt", size: "M", color: "White", stock: 120 },
-      { productName: "Classic Cotton Tee", category: "tshirt", size: "S", color: "Navy", stock: 80 },
-      { productName: "Graphic Print Tee", category: "tshirt", size: "M", color: "White", stock: 200 },
-      { productName: "Graphic Print Tee", category: "tshirt", size: "L", color: "Black", stock: 150 },
-      { productName: "Premium V-Neck", category: "tshirt", size: "XL", color: "Gray", stock: 90 },
-      { productName: "Urban Runner Sneakers", category: "shoes", size: "10", color: "White", stock: 45 },
-      { productName: "Urban Runner Sneakers", category: "shoes", size: "9", color: "Black", stock: 60 },
-      { productName: "Classic Leather Shoes", category: "shoes", size: "11", color: "Brown", stock: 30 },
-      { productName: "Sport Running Shoes", category: "shoes", size: "8", color: "Red", stock: 75 },
-      { productName: "Premium Zip Hoodie", category: "hoodie", size: "M", color: "Navy", stock: 80 },
-      { productName: "Premium Zip Hoodie", category: "hoodie", size: "L", color: "Black", stock: 65 },
-      { productName: "Pullover Hoodie", category: "hoodie", size: "S", color: "Gray", stock: 95 },
-      { productName: "Fleece Hoodie", category: "hoodie", size: "XL", color: "Forest Green", stock: 40 },
+      { 
+        productName: "Classic Cotton Tee", 
+        category: "tshirt", 
+        subcategory: "basic",
+        brand: "Vector Basics",
+        size: "L", 
+        color: "Black", 
+        material: "Cotton",
+        price: 1299,
+        sku: "TSHIRT-001-L-BLK",
+        stock: 150,
+        minStock: 10,
+        season: "all",
+        gender: "unisex",
+        tags: ["basic", "cotton", "casual"],
+        isActive: true
+      },
+      { 
+        productName: "Classic Cotton Tee", 
+        category: "tshirt", 
+        subcategory: "basic",
+        brand: "Vector Basics",
+        size: "M", 
+        color: "White", 
+        material: "Cotton",
+        price: 1299,
+        sku: "TSHIRT-001-M-WHT",
+        stock: 120,
+        minStock: 10,
+        season: "all",
+        gender: "unisex",
+        tags: ["basic", "cotton", "casual"],
+        isActive: true
+      },
+      { 
+        productName: "Classic Cotton Tee", 
+        category: "tshirt", 
+        subcategory: "basic",
+        brand: "Vector Basics",
+        size: "S", 
+        color: "Navy", 
+        material: "Cotton",
+        price: 1299,
+        sku: "TSHIRT-001-S-NVY",
+        stock: 80,
+        minStock: 10,
+        season: "all",
+        gender: "unisex",
+        tags: ["basic", "cotton", "casual"],
+        isActive: true
+      },
+      { 
+        productName: "Graphic Print Tee", 
+        category: "tshirt", 
+        subcategory: "graphic",
+        brand: "Vector Prints",
+        size: "M", 
+        color: "White", 
+        material: "Cotton Blend",
+        price: 999,
+        sku: "TSHIRT-002-M-WHT",
+        stock: 200,
+        minStock: 15,
+        season: "summer",
+        gender: "men",
+        tags: ["graphic", "printed", "casual"],
+        isActive: true
+      },
+      { 
+        productName: "Graphic Print Tee", 
+        category: "tshirt", 
+        subcategory: "graphic",
+        brand: "Vector Prints",
+        size: "L", 
+        color: "Black", 
+        material: "Cotton Blend",
+        price: 999,
+        sku: "TSHIRT-002-L-BLK",
+        stock: 150,
+        minStock: 15,
+        season: "summer",
+        gender: "men",
+        tags: ["graphic", "printed", "casual"],
+        isActive: true
+      },
+      { 
+        productName: "Premium V-Neck", 
+        category: "tshirt", 
+        subcategory: "premium",
+        brand: "Vector Premium",
+        size: "XL", 
+        color: "Gray", 
+        material: "Cotton Modal",
+        price: 1499,
+        sku: "TSHIRT-003-XL-GRY",
+        stock: 90,
+        minStock: 8,
+        season: "all",
+        gender: "unisex",
+        tags: ["premium", "v-neck", "modal"],
+        isActive: true
+      },
+      { 
+        productName: "Urban Runner Sneakers", 
+        category: "shoes", 
+        subcategory: "sneakers",
+        brand: "Vector Sport",
+        size: "10", 
+        color: "White", 
+        material: "Synthetic",
+        price: 3499,
+        sku: "SHOES-001-10-WHT",
+        stock: 45,
+        minStock: 5,
+        season: "all",
+        gender: "men",
+        tags: ["sneakers", "running", "urban"],
+        isActive: true
+      },
+      { 
+        productName: "Urban Runner Sneakers", 
+        category: "shoes", 
+        subcategory: "sneakers",
+        brand: "Vector Sport",
+        size: "9", 
+        color: "Black", 
+        material: "Synthetic",
+        price: 3499,
+        sku: "SHOES-001-9-BLK",
+        stock: 60,
+        minStock: 5,
+        season: "all",
+        gender: "men",
+        tags: ["sneakers", "running", "urban"],
+        isActive: true
+      },
+      { 
+        productName: "Classic Leather Shoes", 
+        category: "shoes", 
+        subcategory: "formal",
+        brand: "Vector Formal",
+        size: "11", 
+        color: "Brown", 
+        material: "Genuine Leather",
+        price: 4299,
+        sku: "SHOES-002-11-BRN",
+        stock: 30,
+        minStock: 3,
+        season: "all",
+        gender: "men",
+        tags: ["formal", "leather", "oxford"],
+        isActive: true
+      },
+      { 
+        productName: "Sport Running Shoes", 
+        category: "shoes", 
+        subcategory: "running",
+        brand: "Vector Sport",
+        size: "8", 
+        color: "Red", 
+        material: "Mesh Synthetic",
+        price: 2999,
+        sku: "SHOES-003-8-RED",
+        stock: 75,
+        minStock: 8,
+        season: "spring",
+        gender: "women",
+        tags: ["running", "sport", "mesh"],
+        isActive: true
+      },
+      { 
+        productName: "Premium Zip Hoodie", 
+        category: "hoodie", 
+        subcategory: "zip",
+        brand: "Vector Premium",
+        size: "M", 
+        color: "Navy", 
+        material: "Cotton Fleece",
+        price: 2499,
+        sku: "HOODIE-001-M-NVY",
+        stock: 80,
+        minStock: 6,
+        season: "fall",
+        gender: "unisex",
+        tags: ["hoodie", "zip", "fleece"],
+        isActive: true
+      },
+      { 
+        productName: "Premium Zip Hoodie", 
+        category: "hoodie", 
+        subcategory: "zip",
+        brand: "Vector Premium",
+        size: "L", 
+        color: "Black", 
+        material: "Cotton Fleece",
+        price: 2499,
+        sku: "HOODIE-001-L-BLK",
+        stock: 65,
+        minStock: 6,
+        season: "fall",
+        gender: "unisex",
+        tags: ["hoodie", "zip", "fleece"],
+        isActive: true
+      },
+      { 
+        productName: "Pullover Hoodie", 
+        category: "hoodie", 
+        subcategory: "pullover",
+        brand: "Vector Basics",
+        size: "S", 
+        color: "Gray", 
+        material: "Cotton Blend",
+        price: 2299,
+        sku: "HOODIE-002-S-GRY",
+        stock: 95,
+        minStock: 8,
+        season: "winter",
+        gender: "men",
+        tags: ["hoodie", "pullover", "casual"],
+        isActive: true
+      },
+      { 
+        productName: "Fleece Hoodie", 
+        category: "hoodie", 
+        subcategory: "fleece",
+        brand: "Vector Premium",
+        size: "XL", 
+        color: "Forest Green", 
+        material: "Cotton Fleece",
+        price: 2799,
+        sku: "HOODIE-003-XL-FGR",
+        stock: 40,
+        minStock: 5,
+        season: "winter",
+        gender: "unisex",
+        tags: ["hoodie", "fleece", "premium"],
+        isActive: true
+      },
     ]);
 
     // Create demo automation logs

@@ -14,6 +14,7 @@ export interface IReturn extends Document {
   reason: string;
   description: string;
   imageUrl: string;
+  price: number;
   aiAnalysisResult: IAIAnalysis | null;
   fraudFlag: boolean;
   validationStatus: "pending" | "approved" | "rejected_ai" | "manual_review";
@@ -52,6 +53,7 @@ const ReturnSchema = new Schema<IReturn>(
     reason: { type: String, required: true },
     description: { type: String, default: "" },
     imageUrl: { type: String, default: "" },
+    price: { type: Number, required: true },
     aiAnalysisResult: { type: AIAnalysisSchema, default: null },
     fraudFlag: { type: Boolean, default: false },
     validationStatus: { 

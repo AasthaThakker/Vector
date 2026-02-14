@@ -490,7 +490,7 @@ function ReturnsContent() {
                           <p className="font-semibold text-slate-900">Return #{ret._id.slice(-8).toUpperCase()}</p>
                           <StatusBadge status={ret.status} />
                         </div>
-                        <p className="text-sm text-slate-500 capitalize">{ret.reason} &middot; {ret.returnMethod}</p>
+                        <p className="text-sm text-slate-500 capitalize">{ret.reason} &middot; {ret.returnMethod} &middot; <span className="font-semibold">₹{ret.price?.toLocaleString() || '0'}</span></p>
                         {ret.description && (
                           <p className="text-sm text-slate-400 mt-1">{ret.description}</p>
                         )}

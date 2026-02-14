@@ -3,6 +3,7 @@ import { getSession } from "@/lib/auth";
 import { connectDB } from "@/lib/mongodb";
 import Return from "@/models/Return";
 import AutomationLog from "@/models/AutomationLog";
+import Order from "@/models/Order";
 import QRCode from "qrcode";
 
 // Async function to trigger AI validation
@@ -43,12 +44,30 @@ export async function GET() {
 
     let returns;
     if (session.role === "admin" || session.role === "warehouse" || session.role === "logistics") {
-      returns = await Return.find({}).sort({ createdAt: -1 }).populate('userId', 'name email');
+      returns = await Return.find({}).sort({ createdAt: -1 }).populate('userId', 'name email').populate('orderId');
     } else {
-      returns = await Return.find({ userId: session.userId }).sort({ createdAt: -1 });
+      returns = await Return.find({ userId: session.userId }).sort({ createdAt: -1 }).populate('orderId');
     }
 
-    return NextResponse.json({ returns });
+    // Extract product prices from orders
+    const returnsWithPrices = returns.map(returnItem => {
+      const order = returnItem.orderId as any;
+      let productPrice = 0;
+      
+      if (order && order.products) {
+        const product = order.products.find((p: any) => p.productId === returnItem.productId);
+        if (product) {
+          productPrice = product.price;
+        }
+      }
+      
+      return {
+        ...returnItem.toObject(),
+        price: productPrice
+      };
+    });
+
+    return NextResponse.json({ returns: returnsWithPrices });
   } catch (error) {
     console.error("Returns fetch error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
@@ -71,6 +90,18 @@ export async function POST(req: NextRequest) {
 
     await connectDB();
 
+    // Get the order to find the product price
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return NextResponse.json({ error: "Order not found" }, { status: 404 });
+    }
+
+    // Find the product in the order to get its price
+    const product = order.products.find(p => p.productId === productId);
+    if (!product) {
+      return NextResponse.json({ error: "Product not found in order" }, { status: 404 });
+    }
+
     const returnRequest = await Return.create({
       orderId,
       userId: session.userId,
@@ -78,6 +109,7 @@ export async function POST(req: NextRequest) {
       reason,
       description: description || "",
       imageUrl: imageUrl || "",
+      price: product.price,
       returnMethod,
       qrCodeData: "", // Empty initially, will be generated on approval
       dropboxLocation: dropboxLocation || "",

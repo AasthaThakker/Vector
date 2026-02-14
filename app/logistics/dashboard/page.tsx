@@ -171,7 +171,7 @@ export default function LogisticsDashboard() {
                       <div>
                         <p className="font-medium text-slate-900">{ret.reason}</p>
                         <p className="text-sm text-slate-500">
-                          {ret.pickupAddress || "Address pending"} • ID: {ret._id.slice(-8)}
+                          {ret.pickupAddress || "Address pending"} • ID: {ret._id.slice(-8)} • Price: ₹{ret.price?.toLocaleString() || '0'}
                         </p>
                       </div>
                     </div>
@@ -223,7 +223,7 @@ export default function LogisticsDashboard() {
                         </div>
                         <div>
                           <p className="font-medium text-slate-900">{ret.reason}</p>
-                          <p className="text-sm text-slate-500">ID: {ret._id.slice(-8)}</p>
+                          <p className="text-sm text-slate-500">ID: {ret._id.slice(-8)} • Price: ₹{ret.price?.toLocaleString() || '0'}</p>
                         </div>
                       </div>
                       <Button
@@ -275,7 +275,7 @@ export default function LogisticsDashboard() {
                         <div>
                           <p className="font-medium text-slate-900">{ret.reason}</p>
                           <p className="text-sm text-slate-500 capitalize">
-                            {ret.returnMethod} • ID: {ret._id.slice(-8)}
+                            {ret.returnMethod} • ID: {ret._id.slice(-8)} • Price: ₹{ret.price?.toLocaleString() || '0'}
                           </p>
                         </div>
                       </div>
