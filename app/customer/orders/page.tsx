@@ -24,6 +24,24 @@ import {
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
+// Type definitions
+interface Product {
+  productId: string;
+  name: string;
+  category: string;
+  price: number;
+  size: string;
+  color: string;
+}
+
+interface Order {
+  _id: string;
+  status: string;
+  orderDate: string;
+  totalAmount: number;
+  products: Product[];
+}
+
 // Category color mapping - Amazon/Apple inspired
 const categoryColors: Record<string, { bg: string; text: string; icon: React.ReactNode }> = {
   tshirt: { bg: "bg-blue-50", text: "text-blue-600", icon: <Shirt className="h-6 w-6" /> },
@@ -49,9 +67,9 @@ export default function CustomerOrders() {
   const orders = data?.orders || [];
 
   // Extract unique products for "Buy it again" sidebar
-  const allProducts = orders.flatMap(order => order.products);
+  const allProducts = orders.flatMap((order: Order) => order.products);
   const uniqueProducts = Array.from(
-    new Map(allProducts.map(product => [product.productId, product])).values()
+    new Map(allProducts.map((product: Product) => [product.productId, product])).values()
   ).slice(0, 6);
 
   return (
