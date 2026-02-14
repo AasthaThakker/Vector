@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { RotateCcw } from "lucide-react";
+import { MoveRight } from "lucide-react";
 import { toast } from "sonner";
 
 export default function SignupPage() {
@@ -44,10 +44,10 @@ export default function SignupPage() {
       <GlassCard className="w-full max-w-md">
         <div className="mb-8 text-center">
           <Link href="/" className="inline-flex items-center gap-2">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
-              <RotateCcw className="h-5 w-5 text-primary-foreground" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-slate-900 to-slate-700 shadow-lg">
+              <MoveRight className="h-6 w-6 text-white" />
             </div>
-            <span className="text-2xl font-bold text-foreground">Vector</span>
+            <span className="text-2xl font-bold text-slate-900">Vector</span>
           </Link>
           <p className="mt-2 text-sm text-muted-foreground">Create your account</p>
         </div>
