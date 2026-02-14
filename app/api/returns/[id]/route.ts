@@ -43,20 +43,19 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         }
         
         // Generate QR code when admin approves the return
-        if (returnRequest.returnMethod === "dropbox") {
-          const qrPayload = JSON.stringify({
-            returnId: returnRequest._id,
-            userId: returnRequest.userId,
-            timestamp: new Date().toISOString(),
-            status: "approved",
-            dropboxLocation: returnRequest.dropboxLocation,
-            approvedBy: session.email,
-            approvedAt: new Date().toISOString()
-          });
-          
-          const qrCodeData = await QRCode.toDataURL(qrPayload);
-          returnRequest.qrCodeData = qrCodeData;
-        }
+        const qrPayload = JSON.stringify({
+          returnId: returnRequest._id,
+          userId: returnRequest.userId,
+          timestamp: new Date().toISOString(),
+          status: "approved",
+          returnMethod: returnRequest.returnMethod,
+          dropboxLocation: returnRequest.dropboxLocation || "",
+          approvedBy: session.email,
+          approvedAt: new Date().toISOString()
+        });
+        
+        const qrCodeData = await QRCode.toDataURL(qrPayload);
+        returnRequest.qrCodeData = qrCodeData;
       }
     } else if (session.role === "warehouse") {
       if (!["warehouse_received", "refund_initiated", "rejected", "completed"].includes(status)) {
@@ -79,7 +78,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       returnId: id,
       action: `Status updated to ${status}`,
       status: "success",
-      details: `Updated by ${session.role} (${session.email})${status === "approved" && returnRequest.returnMethod === "dropbox" ? " - QR code generated" : ""}`,
+      details: `Updated by ${session.role} (${session.email})${status === "approved" ? " - QR code generated" : ""}`,
       timestamp: new Date(),
     });
 

@@ -12,6 +12,7 @@ import {
   Eye,
   Search,
   Filter,
+  QrCode,
 } from "lucide-react";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
@@ -40,7 +41,7 @@ export default function AdminReturns() {
         body: JSON.stringify({ status: action }),
       });
       if (!res.ok) throw new Error("Failed to update");
-      toast.success(`Return ${action} successfully`);
+      toast.success(`Return ${action}${action === "approved" ? " and QR code generated" : ""} successfully`);
       mutate();
       setSelected(null);
     } catch {
@@ -48,7 +49,16 @@ export default function AdminReturns() {
     }
   };
 
-  const selectedReturn = returns.find((r: { _id: string }) => r._id === selected);
+  const selectedReturn = returns.find((r: { 
+  _id: string; 
+  reason: string; 
+  status: string; 
+  returnMethod: string; 
+  createdAt: string;
+  qrCodeData?: string;
+  aiAnalysis?: string;
+  orderId?: { products?: { name: string }[] };
+}) => r._id === selected);
 
   const statuses = [
     "all",
@@ -114,6 +124,7 @@ export default function AdminReturns() {
                   status: string;
                   returnMethod: string;
                   createdAt: string;
+                  qrCodeData?: string;
                   orderId?: { products?: { name: string }[] };
                 }) => (
                   <GlassCard
@@ -130,6 +141,12 @@ export default function AdminReturns() {
                         <div className="flex items-center gap-2">
                           <p className="text-sm font-medium text-foreground">{ret.reason}</p>
                           <StatusBadge status={ret.status} />
+                          {ret.status === "approved" && ret.qrCodeData && (
+                            <div className="flex items-center gap-1 px-2 py-1 bg-emerald-500/10 text-emerald-600 rounded-full text-xs">
+                              <QrCode className="h-3 w-3" />
+                              QR
+                            </div>
+                          )}
                         </div>
                         <p className="mt-1 text-xs text-muted-foreground capitalize">
                           {ret.returnMethod} &middot; {new Date(ret.createdAt).toLocaleDateString()} &middot;
@@ -178,6 +195,36 @@ export default function AdminReturns() {
                     {new Date(selectedReturn.createdAt).toLocaleString()}
                   </p>
                 </div>
+
+                {selectedReturn.status === "approved" && selectedReturn.qrCodeData && (
+                  <div>
+                    <p className="text-muted-foreground mb-2">QR Code</p>
+                    <div className="flex flex-col items-center gap-2 p-3 bg-secondary/50 rounded-lg">
+                      <img 
+                        src={selectedReturn.qrCodeData} 
+                        alt="Return QR Code" 
+                        className="w-32 h-32 border-2 border-background rounded"
+                      />
+                      <p className="text-xs text-muted-foreground text-center">
+                        Scan for return verification
+                      </p>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          const link = document.createElement('a');
+                          link.download = `return-qr-${selectedReturn._id.slice(-8)}.png`;
+                          link.href = selectedReturn.qrCodeData;
+                          link.click();
+                        }}
+                        className="gap-1"
+                      >
+                        <QrCode className="h-3 w-3" />
+                        Download QR
+                      </Button>
+                    </div>
+                  </div>
+                )}
 
                 {selectedReturn.status === "pending" && (
                   <div className="mt-2 flex gap-2">

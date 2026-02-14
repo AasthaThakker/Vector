@@ -417,7 +417,7 @@ function ReturnsContent() {
                     {new Date(ret.createdAt).toLocaleDateString()}
                   </p>
                 </div>
-                {ret.qrCodeData && ret.returnMethod === "dropbox" && (
+                {ret.qrCodeData && (
                   <div className="flex-shrink-0">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={ret.qrCodeData} alt="QR Code" className="h-16 w-16 rounded" />

@@ -12,6 +12,7 @@ import {
   CheckCircle,
   Package,
   Navigation,
+  QrCode,
 } from "lucide-react";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
@@ -117,16 +118,29 @@ export default function LogisticsDashboard() {
                 reason: string;
                 status: string;
                 pickupAddress?: string;
+                qrCodeData?: string;
               }) => (
                 <div
                   key={ret._id}
                   className="flex items-center justify-between rounded-lg bg-secondary/50 p-3"
                 >
-                  <div>
-                    <p className="text-sm font-medium text-foreground">{ret.reason}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {ret.pickupAddress || "Address pending"} &middot; ID: {ret._id.slice(-8)}
-                    </p>
+                  <div className="flex items-center gap-3">
+                    <div>
+                      <p className="text-sm font-medium text-foreground">{ret.reason}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {ret.pickupAddress || "Address pending"} &middot; ID: {ret._id.slice(-8)}
+                      </p>
+                    </div>
+                    {ret.qrCodeData && (
+                      <div className="flex flex-col items-center gap-1">
+                        <img 
+                          src={ret.qrCodeData} 
+                          alt="Return QR Code" 
+                          className="w-12 h-12 border border-background rounded"
+                        />
+                        <span className="text-xs text-muted-foreground">QR</span>
+                      </div>
+                    )}
                   </div>
                   <Button
                     size="sm"
@@ -159,16 +173,29 @@ export default function LogisticsDashboard() {
                   _id: string;
                   reason: string;
                   pickupAddress?: string;
+                  qrCodeData?: string;
                 }) => (
                   <div
                     key={ret._id}
                     className="flex items-center justify-between rounded-lg bg-secondary/50 p-3"
                   >
-                    <div>
-                      <p className="text-sm font-medium text-foreground">{ret.reason}</p>
-                      <p className="text-xs text-muted-foreground">
-                        ID: {ret._id.slice(-8)}
-                      </p>
+                    <div className="flex items-center gap-3">
+                      <div>
+                        <p className="text-sm font-medium text-foreground">{ret.reason}</p>
+                        <p className="text-xs text-muted-foreground">
+                          ID: {ret._id.slice(-8)}
+                        </p>
+                      </div>
+                      {ret.qrCodeData && (
+                        <div className="flex flex-col items-center gap-1">
+                          <img 
+                            src={ret.qrCodeData} 
+                            alt="Return QR Code" 
+                            className="w-12 h-12 border border-background rounded"
+                          />
+                          <span className="text-xs text-muted-foreground">QR</span>
+                        </div>
+                      )}
                     </div>
                     <Button
                       size="sm"
@@ -204,16 +231,29 @@ export default function LogisticsDashboard() {
                   reason: string;
                   status: string;
                   returnMethod: string;
+                  qrCodeData?: string;
                 }) => (
                   <div
                     key={ret._id}
                     className="flex items-center justify-between rounded-lg bg-secondary/50 p-3"
                   >
-                    <div>
-                      <p className="text-sm font-medium text-foreground">{ret.reason}</p>
-                      <p className="text-xs text-muted-foreground capitalize">
-                        {ret.returnMethod} &middot; ID: {ret._id.slice(-8)}
-                      </p>
+                    <div className="flex items-center gap-3">
+                      <div>
+                        <p className="text-sm font-medium text-foreground">{ret.reason}</p>
+                        <p className="text-xs text-muted-foreground capitalize">
+                          {ret.returnMethod} &middot; ID: {ret._id.slice(-8)}
+                        </p>
+                      </div>
+                      {ret.qrCodeData && (
+                        <div className="flex flex-col items-center gap-1">
+                          <img 
+                            src={ret.qrCodeData} 
+                            alt="Return QR Code" 
+                            className="w-12 h-12 border border-background rounded"
+                          />
+                          <span className="text-xs text-muted-foreground">QR</span>
+                        </div>
+                      )}
                     </div>
                     <StatusBadge status={ret.status} />
                   </div>

@@ -63,9 +63,9 @@ export default function CustomerOrders() {
                     </p>
 
                     <div className="mt-4 flex flex-col gap-3">
-                      {order.products.map((product) => (
+                      {order.products.map((product, index) => (
                         <div
-                          key={product.productId}
+                          key={`${product.productId}-${product.size}-${product.color}-${index}`}
                           className="flex items-center gap-3 rounded-lg bg-secondary/50 p-3"
                         >
                           <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-muted">
