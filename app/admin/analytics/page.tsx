@@ -2,6 +2,7 @@
 
 import useSWR from "swr";
 import { GlassCard } from "@/components/glass-card";
+import { OrderStatusTimeline } from "@/components/order-status-timeline";
 import {
   BarChart,
   Bar,
@@ -29,8 +30,10 @@ const COLORS = [
 
 export default function AdminAnalytics() {
   const { data: returnsData } = useSWR("/api/returns?all=true", fetcher);
+  const { data: ordersData } = useSWR("/api/orders", fetcher);
 
   const returns = returnsData?.returns || [];
+  const orders = ordersData?.orders || [];
 
   // Reason breakdown
   const reasonCounts: Record<string, number> = {};
@@ -83,6 +86,12 @@ export default function AdminAnalytics() {
         <p className="text-muted-foreground">Insights into return patterns and trends.</p>
       </div>
 
+      {/* Enhanced Analytics Components */}
+      <div className="space-y-6">
+        <OrderStatusTimeline orders={orders} />
+      </div>
+
+      {/* Original Charts */}
       <div className="grid gap-6 lg:grid-cols-2">
         <GlassCard>
           <h2 className="mb-4 text-lg font-semibold text-foreground">Return Reasons</h2>

@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
+import { AIAnalysisExplanation } from "@/components/ai-analysis-explanation";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -411,43 +412,21 @@ function ReturnsContent() {
                 )}
 
                 {aiValidation && !validating && (
-                  <div className={`rounded-xl border p-4 ${
-                    aiValidation.canSubmit 
-                      ? 'border-emerald-200 bg-emerald-50' 
-                      : 'border-red-200 bg-red-50'
-                  }`}>
-                    <div className="flex items-start gap-3">
-                      {aiValidation.canSubmit ? (
-                        <CheckCircle className="h-5 w-5 text-emerald-600 mt-0.5" />
-                      ) : (
-                        <XCircle className="h-5 w-5 text-red-600 mt-0.5" />
-                      )}
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className={`text-sm font-semibold ${
-                            aiValidation.canSubmit ? 'text-emerald-800' : 'text-red-800'
-                          }`}>
-                            AI Validation {aiValidation.canSubmit ? 'Passed' : 'Failed'}
-                          </span>
-                          <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                            aiValidation.canSubmit ? 'bg-emerald-200 text-emerald-800' : 'bg-red-200 text-red-800'
-                          }`}>
-                            {(aiValidation.confidence * 100).toFixed(0)}% confidence
-                          </span>
-                        </div>
-                        <p className={`text-sm ${
-                          aiValidation.canSubmit ? 'text-emerald-700' : 'text-red-700'
-                        }`}>
-                          {aiValidation.reason}
-                        </p>
-                        {!aiValidation.canSubmit && (
-                          <p className="text-sm text-red-600 mt-2">
-                            💡 Please provide a more accurate description or clearer image to improve validation results.
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
+                  <AIAnalysisExplanation
+                    analysis={{
+                      match: aiValidation.canSubmit,
+                      confidence: aiValidation.confidence,
+                      reason: aiValidation.reason,
+                      details: {
+                        imageAnalysis: imagePreview ? "Image analyzed for visual defects and condition" : undefined,
+                        textAnalysis: description ? `Description analyzed: "${description}"` : undefined,
+                        recommendations: aiValidation.canSubmit 
+                          ? ["Proceed with return submission", "Keep original packaging if possible"]
+                          : ["Provide clearer image", "Add more specific details about the issue", "Include measurements if size-related"]
+                      }
+                    }}
+                    imageUrl={imagePreview || undefined}
+                  />
                 )}
               </form>
             </div>

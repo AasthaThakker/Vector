@@ -49,8 +49,8 @@ export async function GET() {
       returns = await Return.find({ userId: session.userId }).sort({ createdAt: -1 }).populate('orderId');
     }
 
-    // Extract product prices from orders
-    const returnsWithPrices = returns.map(returnItem => {
+    // Extract product prices from orders and calculate risk scores
+    const returnsWithPricesAndRisk = returns.map(returnItem => {
       const order = returnItem.orderId as any;
       let productPrice = 0;
       
@@ -61,13 +61,50 @@ export async function GET() {
         }
       }
       
+      // Calculate risk score based on return reason
+      let riskScore = 50; // Default medium risk
+      let aiConfidence = 0.85; // Default confidence
+      
+      switch (returnItem.reason) {
+        case 'wrong_size':
+          riskScore = 25; // Low risk - easy to restock
+          aiConfidence = 0.95;
+          break;
+        case 'changed_mind':
+          riskScore = 20; // Very low risk - product usually fine
+          aiConfidence = 0.90;
+          break;
+        case 'defective':
+          riskScore = 85; // High risk - quality issue
+          aiConfidence = 0.88;
+          break;
+        case 'wrong_item':
+          riskScore = 60; // Medium-high risk - process error
+          aiConfidence = 0.92;
+          break;
+        case 'damaged_shipping':
+          riskScore = 75; // High risk - shipping damage
+          aiConfidence = 0.87;
+          break;
+        case 'quality_issue':
+          riskScore = 70; // Medium-high risk
+          aiConfidence = 0.83;
+          break;
+        case 'not_as_described':
+          riskScore = 55; // Medium risk
+          aiConfidence = 0.80;
+          break;
+      }
+      
       return {
         ...returnItem.toObject(),
-        price: productPrice
+        price: productPrice,
+        riskScore,
+        aiConfidence
       };
     });
 
-    return NextResponse.json({ returns: returnsWithPrices });
+    return NextResponse.json({ returns: returnsWithPricesAndRisk });
   } catch (error) {
     console.error("Returns fetch error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

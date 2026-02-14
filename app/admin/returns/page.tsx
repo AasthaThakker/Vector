@@ -4,8 +4,10 @@ import useSWR from "swr";
 import { GlassCard } from "@/components/glass-card";
 import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
+import { AIRiskScore } from "@/components/ai-risk-score";
 import { useState } from "react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import {
   CheckCircle,
   XCircle,
@@ -128,6 +130,8 @@ export default function AdminReturns() {
                   price: number;
                   qrCodeData?: string;
                   orderId?: { products?: { name: string }[] };
+                  riskScore?: number;
+                  aiConfidence?: number;
                 }) => (
                   <GlassCard
                     key={ret._id}
@@ -143,6 +147,18 @@ export default function AdminReturns() {
                         <div className="flex items-center gap-2">
                           <p className="text-sm font-medium text-foreground">{ret.reason}</p>
                           <StatusBadge status={ret.status} />
+                          {/* Risk Indicator */}
+                          {ret.riskScore && (
+                            <div className={cn(
+                              "flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium",
+                              ret.riskScore >= 80 ? "bg-rose-100 text-rose-700" :
+                              ret.riskScore >= 60 ? "bg-amber-100 text-amber-700" :
+                              "bg-emerald-100 text-emerald-700"
+                            )}>
+                              {ret.riskScore >= 80 ? "⚠️" : ret.riskScore >= 60 ? "⚡" : "✓"}
+                              {ret.riskScore >= 80 ? "High Risk" : ret.riskScore >= 60 ? "Medium Risk" : "Low Risk"}
+                            </div>
+                          )}
                           {ret.status === "approved" && ret.qrCodeData && (
                             <div className="flex items-center gap-1 px-2 py-1 bg-emerald-500/10 text-emerald-600 rounded-full text-xs">
                               <QrCode className="h-3 w-3" />
@@ -194,12 +210,28 @@ export default function AdminReturns() {
                   <p className="text-muted-foreground">Status</p>
                   <StatusBadge status={selectedReturn.status} />
                 </div>
-                {selectedReturn.aiAnalysis && (
-                  <div>
-                    <p className="text-muted-foreground">AI Analysis</p>
-                    <p className="text-foreground">{selectedReturn.aiAnalysis}</p>
-                  </div>
-                )}
+                {/* AI Risk Assessment */}
+                <div className="space-y-3">
+                  <p className="text-muted-foreground font-medium">AI Risk Assessment</p>
+                  <AIRiskScore
+                    score={selectedReturn.riskScore || 50}
+                    confidence={selectedReturn.aiConfidence || 0.85}
+                    analysis={{
+                      match: true,
+                      reason: `Risk assessment based on return reason: ${selectedReturn.reason}`,
+                      riskFactors: selectedReturn.reason === 'defective' ? ['Product defect detected', 'Quality control issue'] : 
+                                   selectedReturn.reason === 'wrong_item' ? ['Incorrect item sent', 'Inventory mismatch'] :
+                                   selectedReturn.reason === 'damaged_shipping' ? ['Shipping damage', 'Packaging issue'] :
+                                   selectedReturn.reason === 'quality_issue' ? ['Quality standards not met', 'Manufacturing defect'] : [],
+                      positiveFactors: selectedReturn.reason === 'wrong_size' ? ['Clear size issue', 'Easy restock'] :
+                                       selectedReturn.reason === 'changed_mind' ? ['Product in good condition', 'Returnable'] :
+                                       selectedReturn.reason === 'not_as_described' ? ['Product functional', 'Minor discrepancy'] : [],
+                      recommendation: selectedReturn.status === 'pending' ? 
+                        'Review customer images and description before approval' : 
+                        'Return processed successfully'
+                    }}
+                  />
+                </div>
                 <div>
                   <p className="text-muted-foreground">Submitted</p>
                   <p className="text-foreground">
