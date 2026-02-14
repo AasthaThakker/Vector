@@ -274,16 +274,15 @@ export default function LandingPage() {
                     <ArrowRight className="h-5 w-5" />
                   </Button>
                 </Link>
-                <Button 
-                  variant="outline" 
-                  size="lg"
-                  onClick={handleSeed} 
-                  disabled={seeding}
-                  className="gap-2 px-8 h-14 text-base font-semibold border-slate-300 hover:bg-slate-50 transition-all"
-                >
-                  <Play className="h-4 w-4" />
-                  {seeding ? "Loading..." : "View Demo"}
-                </Button>
+                <Link href={"/login"}>
+                  <Button 
+                    size="lg"
+                    className="gap-2 px-8 h-14 text-base font-semibold bg-white text-slate-900 hover:bg-slate-50 border border-slate-300 shadow-xl transition-all"
+                  >
+                    <Play className="h-4 w-4" />
+                    Explore Demo
+                  </Button>
+                </Link>
               </div>
 
               {/* Trust Indicators */}
@@ -530,7 +529,7 @@ export default function LandingPage() {
               <div key={index} className="relative">
                 <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm hover:shadow-lg hover:shadow-slate-900/5 transition-all duration-300 h-full">
                   <div className="flex items-center justify-between mb-4">
-                    <span className="text-4xl font-bold text-slate-100">{step.step}</span>
+                    <span className="text-4xl font-bold text-slate-900">{step.step}</span>
                     <div className="h-10 w-10 rounded-xl bg-slate-900 flex items-center justify-center">
                       <span className="text-white">{step.icon}</span>
                     </div>
