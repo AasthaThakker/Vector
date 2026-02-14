@@ -87,7 +87,9 @@ export function DashboardNav() {
           <button
             onClick={() => {
               logout();
-              window.location.href = "/";
+              if (typeof window !== 'undefined') {
+                window.location.href = "/";
+              }
             }}
             className="flex items-center gap-1 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
           >

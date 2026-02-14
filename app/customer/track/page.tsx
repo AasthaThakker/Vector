@@ -117,7 +117,7 @@ function TrackingTimeline({ status, method, createdAt }: { status: string; metho
               {isCurrent && (
                 <div className="mt-2 flex items-center gap-2 text-xs text-slate-500">
                   <Clock className="h-3 w-3" />
-                  <span>Updated {new Date().toLocaleDateString()}</span>
+                  <span>Updated {createdAt ? new Date(createdAt).toLocaleDateString() : new Date().toLocaleDateString()}</span>
                 </div>
               )}
             </div>

@@ -223,10 +223,12 @@ export default function AdminReturns() {
                         size="sm"
                         variant="outline"
                         onClick={() => {
-                          const link = document.createElement('a');
-                          link.download = `return-qr-${selectedReturn._id.slice(-8)}.png`;
-                          link.href = selectedReturn.qrCodeData;
-                          link.click();
+                          if (typeof document !== 'undefined') {
+                            const link = document.createElement('a');
+                            link.download = `return-qr-${selectedReturn._id.slice(-8)}.png`;
+                            link.href = selectedReturn.qrCodeData;
+                            link.click();
+                          }
                         }}
                         className="gap-1"
                       >

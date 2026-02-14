@@ -101,7 +101,11 @@ export default function CustomerOrders() {
             <Package className="mx-auto h-16 w-16 text-slate-300" />
             <h2 className="mt-4 text-xl font-semibold text-slate-900">No orders found</h2>
             <p className="mt-2 text-slate-500">You haven't placed any orders yet.</p>
-            <Button className="mt-4 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600" onClick={() => window.location.href = '/'}>
+            <Button className="mt-4 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600" onClick={() => {
+              if (typeof window !== 'undefined') {
+                window.location.href = '/';
+              }
+            }}>
               Start Shopping
             </Button>
           </div>

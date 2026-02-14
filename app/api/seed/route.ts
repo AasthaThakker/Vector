@@ -85,19 +85,22 @@ export async function POST(request: Request) {
 
     // Generate 5-7 orders for each customer
     customerUsers.forEach((customer, customerIndex) => {
-      const orderCount = 5 + Math.floor(Math.random() * 3); // 5-7 orders per customer
+      const orderCount = 5 + Math.floor((customerIndex * 3) % 3); // Deterministic order count
       
       for (let i = 0; i < orderCount; i++) {
         const orderDate = new Date(2026, 0, 15 + (customerIndex * 10) + (i * 8)); // Stagger dates
-        const numProducts = Math.random() > 0.6 ? 2 : 1; // 40% chance of multiple products
+        const numProducts = (customerIndex + i) % 3 === 0 ? 2 : 1; // Deterministic product count
         const products = [];
         let totalAmount = 0;
         
         for (let j = 0; j < numProducts; j++) {
-          const product = productCatalog[Math.floor(Math.random() * productCatalog.length)];
-          const size = product.sizes[Math.floor(Math.random() * product.sizes.length)];
-          const color = product.colors[Math.floor(Math.random() * product.colors.length)];
-          const price = product.basePrice + Math.floor(Math.random() * 500) - 250; // Price variation
+          const productIndex = (customerIndex * 7 + i * 2 + j) % productCatalog.length;
+          const product = productCatalog[productIndex];
+          const sizeIndex = (customerIndex + i + j) % product.sizes.length;
+          const colorIndex = (customerIndex * 3 + i + j) % product.colors.length;
+          const size = product.sizes[sizeIndex];
+          const color = product.colors[colorIndex];
+          const price = product.basePrice + ((customerIndex * 100 + i * 50 + j * 25) % 500) - 250; // Deterministic price variation
           
           products.push({
             productId: product.productId,
@@ -112,7 +115,7 @@ export async function POST(request: Request) {
         }
         
         const statuses = ["delivered", "delivered", "delivered", "shipped", "processing"]; // Most are delivered
-        const status = statuses[Math.floor(Math.random() * statuses.length)];
+        const status = statuses[(customerIndex + i) % statuses.length];
         
         allOrders.push({
           userId: customer._id,
