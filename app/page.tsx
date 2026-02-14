@@ -33,6 +33,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 
@@ -377,7 +378,9 @@ export default function LandingPage() {
                       ].map((item, i) => (
                         <div key={i} className="flex items-center justify-between py-2 border-b border-slate-100 last:border-0">
                           <div className="flex items-center gap-3">
-                            <div className={`h-2 w-2 rounded-full ${item.status === 'blue' ? 'bg-blue-500' : item.status === 'amber' ? 'bg-amber-500' : 'bg-emerald-500'}`} />
+                            <div className={cn("h-2 w-2 rounded-full", 
+                              item.status === 'blue' ? 'bg-blue-500' : 
+                              item.status === 'amber' ? 'bg-amber-500' : 'bg-emerald-500')} />
                             <div>
                               <div className="text-sm font-medium text-slate-900">{item.action}</div>
                               <div className="text-xs text-slate-500">{item.item}</div>
@@ -628,7 +631,7 @@ export default function LandingPage() {
               onClick={() => setShowDemo(!showDemo)}
               className="flex items-center gap-2 mx-auto text-sm text-slate-400 hover:text-white transition-colors"
             >
-              <ChevronDown className={`h-4 w-4 transition-transform ${showDemo ? "rotate-180" : ""}`} />
+              <ChevronDown className={cn("h-4 w-4 transition-transform", showDemo && "rotate-180")} />
               {showDemo ? "Hide" : "Show"} demo credentials
             </button>
             

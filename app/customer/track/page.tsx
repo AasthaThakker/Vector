@@ -25,6 +25,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -73,9 +74,7 @@ function TrackingTimeline({ status, method, createdAt }: { status: string; metho
             {/* Timeline line */}
             {idx < applicableSteps.length - 1 && (
               <div 
-                className={`absolute left-5 top-10 w-0.5 h-full ${
-                  isComplete ? colors.line : "bg-slate-200"
-                }`} 
+                className={cn("absolute left-5 top-10 w-0.5 h-full", isComplete ? colors.line : "bg-slate-200")} 
                 style={{ height: "calc(100% - 20px)" }}
               />
             )}
@@ -83,13 +82,14 @@ function TrackingTimeline({ status, method, createdAt }: { status: string; metho
             {/* Icon/Step indicator */}
             <div className="relative z-10 flex-shrink-0">
               <div 
-                className={`flex h-10 w-10 items-center justify-center rounded-full border-2 transition-all duration-300 ${
+                className={cn(
+                  "flex h-10 w-10 items-center justify-center rounded-full border-2 transition-all duration-300",
                   isComplete 
-                    ? `${colors.bg} ${colors.border} ${colors.text}` 
+                    ? cn(colors.bg, colors.border, colors.text) 
                     : isCurrent
-                    ? `bg-white ${colors.border} ${colors.text} shadow-lg shadow-${step.color}-500/20`
+                    ? cn("bg-white", colors.border, colors.text, "shadow-lg", `shadow-${step.color}-500/20`)
                     : "bg-slate-50 border-slate-200 text-slate-300"
-                }`}
+                )}
               >
                 {isComplete ? (
                   <CheckCircle2 className="h-5 w-5" />
@@ -100,18 +100,18 @@ function TrackingTimeline({ status, method, createdAt }: { status: string; metho
             </div>
 
             {/* Content */}
-            <div className={`flex-1 pb-8 ${isUpcoming ? "opacity-50" : ""}`}>
+            <div className={cn("flex-1 pb-8", isUpcoming && "opacity-50")}>
               <div className="flex items-center gap-2">
-                <h4 className={`font-semibold ${isComplete || isCurrent ? "text-slate-900" : "text-slate-400"}`}>
+                <h4 className={cn("font-semibold", (isComplete || isCurrent) ? "text-slate-900" : "text-slate-400")}>
                   {step.label}
                 </h4>
                 {isCurrent && (
-                  <Badge className={`${colors.bg} ${colors.text} border-0 text-xs`}>
+                  <Badge variant="secondary" className="text-xs">
                     Current
                   </Badge>
                 )}
               </div>
-              <p className={`text-sm mt-1 ${isComplete || isCurrent ? "text-slate-600" : "text-slate-400"}`}>
+              <p className={cn("text-sm mt-1", (isComplete || isCurrent) ? "text-slate-600" : "text-slate-400")}>
                 {step.description}
               </p>
               {isCurrent && (
