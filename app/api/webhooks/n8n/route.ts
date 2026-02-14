@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { demoStore } from "@/lib/demo-store";
+import { connectDB } from "@/lib/mongodb";
+import Return from "@/models/Return";
+import AutomationLog from "@/models/AutomationLog";
 
 /**
  * n8n Webhook Endpoint
@@ -14,19 +16,24 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "returnId and action required" }, { status: 400 });
     }
 
-    const returnRequest = demoStore.findReturnById(returnId);
+    await connectDB();
+
+    const returnRequest = await Return.findById(returnId);
     if (!returnRequest) {
       return NextResponse.json({ error: "Return not found" }, { status: 404 });
     }
 
     let logStatus: "success" | "failed" = "success";
+    let newStatus = returnRequest.status;
 
     switch (action) {
       case "approve":
-        demoStore.updateReturnStatus(returnId, "approved");
+        newStatus = "approved";
+        await Return.findByIdAndUpdate(returnId, { status: "approved" });
         break;
       case "reject":
-        demoStore.updateReturnStatus(returnId, "rejected");
+        newStatus = "rejected";
+        await Return.findByIdAndUpdate(returnId, { status: "rejected" });
         break;
       case "manual_review":
         break;
@@ -36,15 +43,16 @@ export async function POST(req: NextRequest) {
         logStatus = "failed";
     }
 
-    demoStore.addAutomationLog({
+    await AutomationLog.create({
       workflowId: `n8n_${action}`,
       returnId: returnRequest._id,
       action: `n8n webhook: ${action}`,
       status: logStatus,
       details: JSON.stringify(data || {}),
+      timestamp: new Date(),
     });
 
-    return NextResponse.json({ success: true, status: returnRequest.status });
+    return NextResponse.json({ success: true, status: newStatus });
   } catch (error) {
     console.error("n8n webhook error:", error);
     return NextResponse.json({ error: "Webhook processing failed" }, { status: 500 });

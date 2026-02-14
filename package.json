@@ -6,7 +6,8 @@
     "dev": "next dev --turbo",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "init-db": "npx ts-node scripts/init-database.ts"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
@@ -53,7 +54,7 @@
     "next-themes": "^0.4.6",
     "qrcode": "^1.5.4",
     "react": "19.2.3",
-    "react-day-picker": "8.10.1",
+    "react-day-picker": "^9.13.2",
     "react-dom": "19.2.3",
     "react-hook-form": "^7.54.1",
     "react-resizable-panels": "^2.1.7",
