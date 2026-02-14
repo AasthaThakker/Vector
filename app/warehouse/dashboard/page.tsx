@@ -19,11 +19,11 @@ const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 export default function WarehouseDashboard() {
   const { data: returnsData, mutate } = useSWR("/api/returns?all=true", fetcher);
-  const { data: inventoryData, mutate: mutateInv } = useSWR("/api/inventory", fetcher);
+  const { data: inventoryData, mutate: mutateInv } = useSWR("/api/inventory?limit=50", fetcher);
   const [scanInput, setScanInput] = useState("");
 
   const returns = returnsData?.returns || [];
-  const inventory = inventoryData?.inventory || [];
+  const inventory = inventoryData?.items || [];
 
   const inTransit = returns.filter(
     (r: { status: string }) =>
@@ -101,7 +101,7 @@ export default function WarehouseDashboard() {
     },
     {
       label: "Inventory Items",
-      value: inventory.length,
+      value: inventoryData?.pagination?.total || 0,
       icon: <CheckCircle className="h-5 w-5" />,
       color: "text-emerald-500",
     },
@@ -245,7 +245,12 @@ export default function WarehouseDashboard() {
 
       {/* Inventory */}
       <GlassCard>
-        <h2 className="mb-4 text-lg font-semibold text-foreground">Inventory</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-foreground">Fashion Inventory</h2>
+          <div className="text-sm text-muted-foreground">
+            Showing {inventory.length} of {inventoryData?.pagination?.total || 0} items
+          </div>
+        </div>
         {inventory.length === 0 ? (
           <p className="text-sm text-muted-foreground">No inventory items yet.</p>
         ) : (
@@ -254,10 +259,12 @@ export default function WarehouseDashboard() {
               <thead>
                 <tr className="border-b border-border text-left text-muted-foreground">
                   <th className="pb-2 pr-4 font-medium">Product</th>
+                  <th className="pb-2 pr-4 font-medium">Brand</th>
                   <th className="pb-2 pr-4 font-medium">Category</th>
-                  <th className="pb-2 pr-4 font-medium">Size</th>
-                  <th className="pb-2 pr-4 font-medium">Color</th>
-                  <th className="pb-2 font-medium">Stock</th>
+                  <th className="pb-2 pr-4 font-medium">Size/Color</th>
+                  <th className="pb-2 pr-4 font-medium">Price</th>
+                  <th className="pb-2 pr-4 font-medium">Stock</th>
+                  <th className="pb-2 font-medium">Status</th>
                 </tr>
               </thead>
               <tbody>
@@ -265,21 +272,68 @@ export default function WarehouseDashboard() {
                   (item: {
                     _id: string;
                     productName: string;
+                    brand: string;
                     category: string;
                     size: string;
                     color: string;
+                    price: number;
+                    salePrice?: number;
                     stock: number;
-                  }) => (
-                    <tr key={item._id} className="border-b border-border/50">
-                      <td className="py-2 pr-4 text-foreground">{item.productName}</td>
-                      <td className="py-2 pr-4 capitalize text-muted-foreground">
-                        {item.category}
-                      </td>
-                      <td className="py-2 pr-4 text-foreground">{item.size}</td>
-                      <td className="py-2 pr-4 text-foreground">{item.color}</td>
-                      <td className="py-2 text-foreground">{item.stock}</td>
-                    </tr>
-                  )
+                    minStock: number;
+                    material: string;
+                    season: string;
+                    gender: string;
+                  }) => {
+                    const getStockStatus = (stock: number, minStock: number) => {
+                      if (stock === 0) return { status: "Out of Stock", color: "text-red-600" };
+                      if (stock <= minStock) return { status: "Low Stock", color: "text-amber-600" };
+                      return { status: "In Stock", color: "text-green-600" };
+                    };
+                    
+                    const stockStatus = getStockStatus(item.stock, item.minStock);
+                    
+                    return (
+                      <tr key={item._id} className="border-b border-border/50 hover:bg-muted/30">
+                        <td className="py-3 pr-4">
+                          <div>
+                            <div className="font-medium text-foreground text-sm">{item.productName}</div>
+                            <div className="text-xs text-muted-foreground">{item.material} &middot; {item.season}</div>
+                          </div>
+                        </td>
+                        <td className="py-3 pr-4 text-foreground">{item.brand}</td>
+                        <td className="py-3 pr-4">
+                          <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800">
+                            {item.category.charAt(0).toUpperCase() + item.category.slice(1)}
+                          </span>
+                        </td>
+                        <td className="py-3 pr-4">
+                          <div className="text-sm">
+                            <div className="text-foreground">{item.size}</div>
+                            <div className="text-muted-foreground">{item.color}</div>
+                          </div>
+                        </td>
+                        <td className="py-3 pr-4">
+                          <div>
+                            <div className="font-medium text-foreground">Rs.{item.price}</div>
+                            {item.salePrice && (
+                              <div className="text-sm text-green-600">Rs.{item.salePrice}</div>
+                            )}
+                          </div>
+                        </td>
+                        <td className="py-3 pr-4">
+                          <div className="text-center">
+                            <div className="font-medium text-foreground">{item.stock}</div>
+                            <div className="text-xs text-muted-foreground">Min: {item.minStock}</div>
+                          </div>
+                        </td>
+                        <td className="py-3">
+                          <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${stockStatus.color}`}>
+                            {stockStatus.status}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  }
                 )}
               </tbody>
             </table>
