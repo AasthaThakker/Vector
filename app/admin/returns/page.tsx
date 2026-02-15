@@ -154,28 +154,16 @@ export default function AdminReturns() {
                         <div className="flex items-center gap-2">
                           <p className="text-sm font-medium text-foreground">{ret.reason}</p>
                           <StatusBadge status={ret.status} />
-                          {/* Trust Score Indicator */}
+                          {/* Risk Indicator based on trustScore */}
                           {ret.trustScore !== undefined && (
                             <div className={cn(
                               "flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium",
-                              ret.trustScore >= 80 ? "bg-emerald-100 text-emerald-700" :
-                                ret.trustScore >= 60 ? "bg-amber-100 text-amber-700" :
+                              ret.trustScore > 60 ? "bg-emerald-100 text-emerald-700" :
+                                ret.trustScore >= 30 ? "bg-amber-100 text-amber-700" :
                                   "bg-rose-100 text-rose-700"
                             )}>
-                              👤 {ret.trustScore}
-                              {ret.trustScore >= 80 ? "High Trust" : ret.trustScore >= 60 ? "Med Trust" : "Low Trust"}
-                            </div>
-                          )}
-                          {/* Risk Indicator */}
-                          {ret.riskScore !== undefined && (
-                            <div className={cn(
-                              "flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium",
-                              ret.riskScore > 60 ? "bg-rose-100 text-rose-700" :
-                                ret.riskScore >= 30 ? "bg-amber-100 text-amber-700" :
-                                  "bg-emerald-100 text-emerald-700"
-                            )}>
-                              {ret.riskScore > 60 ? "⚠️" : ret.riskScore >= 30 ? "⚡" : "✓"}
-                              {ret.riskScore > 60 ? "High Risk" : ret.riskScore >= 30 ? "Medium Risk" : "Low Risk"}
+                              {ret.trustScore > 60 ? "✓" : ret.trustScore >= 30 ? "⚡" : "⚠️"}
+                              {ret.trustScore > 60 ? "Low Risk" : ret.trustScore >= 30 ? "Medium Risk" : "High Risk"}
                             </div>
                           )}
                           {ret.status === "approved" && ret.qrCodeData && (
