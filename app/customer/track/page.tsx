@@ -342,7 +342,7 @@ function ReturnCard({ ret }: { ret: any }) {
 
                   </p>
 
-                  <p className="text-sm text-slate-500">Size L • $45.00</p>
+                  <p className="text-sm text-slate-500">Size L • ₹{ret.price?.toFixed(2) || "0.00"}</p>
 
                 </div>
 
