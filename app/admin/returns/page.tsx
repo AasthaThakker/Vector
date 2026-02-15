@@ -51,11 +51,11 @@ export default function AdminReturns() {
     }
   };
 
-  const selectedReturn = returns.find((r: { 
-    _id: string; 
-    reason: string; 
-    status: string; 
-    returnMethod: string; 
+  const selectedReturn = returns.find((r: {
+    _id: string;
+    reason: string;
+    status: string;
+    returnMethod: string;
     createdAt: string;
     price: number;
     qrCodeData?: string;
@@ -143,9 +143,8 @@ export default function AdminReturns() {
                 }) => (
                   <GlassCard
                     key={ret._id}
-                    className={`cursor-pointer transition-all ${
-                      selected === ret._id ? "ring-2 ring-primary" : ""
-                    }`}
+                    className={`cursor-pointer transition-all ${selected === ret._id ? "ring-2 ring-primary" : ""
+                      }`}
                   >
                     <button
                       className="flex w-full items-center justify-between text-left"
@@ -160,23 +159,23 @@ export default function AdminReturns() {
                             <div className={cn(
                               "flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium",
                               ret.trustScore >= 80 ? "bg-emerald-100 text-emerald-700" :
-                              ret.trustScore >= 60 ? "bg-amber-100 text-amber-700" :
-                              "bg-rose-100 text-rose-700"
+                                ret.trustScore >= 60 ? "bg-amber-100 text-amber-700" :
+                                  "bg-rose-100 text-rose-700"
                             )}>
                               👤 {ret.trustScore}
                               {ret.trustScore >= 80 ? "High Trust" : ret.trustScore >= 60 ? "Med Trust" : "Low Trust"}
                             </div>
                           )}
                           {/* Risk Indicator */}
-                          {ret.riskScore && (
+                          {ret.riskScore !== undefined && (
                             <div className={cn(
                               "flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium",
-                              ret.riskScore >= 80 ? "bg-rose-100 text-rose-700" :
-                              ret.riskScore >= 60 ? "bg-amber-100 text-amber-700" :
-                              "bg-emerald-100 text-emerald-700"
+                              ret.riskScore > 60 ? "bg-rose-100 text-rose-700" :
+                                ret.riskScore >= 30 ? "bg-amber-100 text-amber-700" :
+                                  "bg-emerald-100 text-emerald-700"
                             )}>
-                              {ret.riskScore >= 80 ? "⚠️" : ret.riskScore >= 60 ? "⚡" : "✓"}
-                              {ret.riskScore >= 80 ? "High Risk" : ret.riskScore >= 60 ? "Medium Risk" : "Low Risk"}
+                              {ret.riskScore > 60 ? "⚠️" : ret.riskScore >= 30 ? "⚡" : "✓"}
+                              {ret.riskScore > 60 ? "High Risk" : ret.riskScore >= 30 ? "Medium Risk" : "Low Risk"}
                             </div>
                           )}
                           {ret.status === "approved" && ret.qrCodeData && (
@@ -236,55 +235,22 @@ export default function AdminReturns() {
                   <AIRiskScore
                     score={selectedReturn.riskScore || 50}
                     confidence={selectedReturn.aiConfidence || 0.85}
+                    trustScore={selectedReturn.trustScore}
                     analysis={{
                       match: selectedReturn.mlPrediction !== 'FRAUD',
                       reason: `ML Analysis: ${selectedReturn.mlPrediction || 'UNKNOWN'} (${selectedReturn.mlRiskLevel || 'UNKNOWN'} risk)`,
-                      riskFactors: selectedReturn.reason === 'defective' ? ['Product defect detected', 'Quality control issue'] : 
-                                   selectedReturn.reason === 'wrong_item' ? ['Incorrect item sent', 'Inventory mismatch'] :
-                                   selectedReturn.reason === 'damaged_shipping' ? ['Shipping damage', 'Packaging issue'] :
-                                   selectedReturn.reason === 'quality_issue' ? ['Quality standards not met', 'Manufacturing defect'] : [],
+                      riskFactors: selectedReturn.reason === 'defective' ? ['Product defect detected', 'Quality control issue'] :
+                        selectedReturn.reason === 'wrong_item' ? ['Incorrect item sent', 'Inventory mismatch'] :
+                          selectedReturn.reason === 'damaged_shipping' ? ['Shipping damage', 'Packaging issue'] :
+                            selectedReturn.reason === 'quality_issue' ? ['Quality standards not met', 'Manufacturing defect'] : [],
                       positiveFactors: selectedReturn.reason === 'wrong_size' ? ['Clear size issue', 'Easy restock'] :
-                                       selectedReturn.reason === 'changed_mind' ? ['Product in good condition', 'Returnable'] :
-                                       selectedReturn.reason === 'not_as_described' ? ['Product functional', 'Minor discrepancy'] : [],
-                      recommendation: selectedReturn.status === 'pending' ? 
-                        'Review customer images and description before approval' : 
+                        selectedReturn.reason === 'changed_mind' ? ['Product in good condition', 'Returnable'] :
+                          selectedReturn.reason === 'not_as_described' ? ['Product functional', 'Minor discrepancy'] : [],
+                      recommendation: selectedReturn.status === 'pending' ?
+                        'Review customer images and description before approval' :
                         'Return processed successfully'
                     }}
                   />
-                  
-                  {/* User Trust Score Display */}
-                  {selectedReturn.trustScore !== undefined && (
-                    <div className="mt-4 p-3 bg-secondary/50 rounded-lg">
-                      <p className="text-muted-foreground font-medium mb-2">User Trust Score</p>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <div className={cn(
-                            "text-2xl font-bold",
-                            selectedReturn.trustScore >= 80 ? "text-emerald-600" :
-                            selectedReturn.trustScore >= 60 ? "text-amber-600" :
-                            "text-rose-600"
-                          )}>
-                            {selectedReturn.trustScore}
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            / 100
-                          </div>
-                        </div>
-                        <div className={cn(
-                          "px-3 py-1 rounded-full text-xs font-medium",
-                          selectedReturn.trustScore >= 80 ? "bg-emerald-100 text-emerald-700" :
-                          selectedReturn.trustScore >= 60 ? "bg-amber-100 text-amber-700" :
-                          "bg-rose-100 text-rose-700"
-                        )}>
-                          {selectedReturn.trustScore >= 80 ? "High Trust" : 
-                           selectedReturn.trustScore >= 60 ? "Medium Trust" : "Low Trust"}
-                        </div>
-                      </div>
-                      <div className="mt-2 text-xs text-muted-foreground">
-                        Trust score dynamically fetched from user table based on return history and ML predictions
-                      </div>
-                    </div>
-                  )}
                 </div>
                 <div>
                   <p className="text-muted-foreground">Submitted</p>
@@ -297,9 +263,9 @@ export default function AdminReturns() {
                   <div>
                     <p className="text-muted-foreground mb-2">QR Code</p>
                     <div className="flex flex-col items-center gap-2 p-3 bg-secondary/50 rounded-lg">
-                      <img 
-                        src={selectedReturn.qrCodeData} 
-                        alt="Return QR Code" 
+                      <img
+                        src={selectedReturn.qrCodeData}
+                        alt="Return QR Code"
                         className="w-32 h-32 border-2 border-background rounded"
                       />
                       <p className="text-xs text-muted-foreground text-center">

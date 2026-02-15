@@ -3,12 +3,12 @@
 import React from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
-import { 
-  AlertTriangle, 
-  CheckCircle, 
-  XCircle, 
-  Info, 
-  TrendingUp, 
+import {
+  AlertTriangle,
+  CheckCircle,
+  XCircle,
+  Info,
+  TrendingUp,
   TrendingDown,
   Shield,
   Eye
@@ -18,6 +18,7 @@ import { cn } from '@/lib/utils'
 interface AIRiskScoreProps {
   score: number // 0-100
   confidence: number // 0-1
+  trustScore?: number // 0-100, from User DB
   analysis: {
     match: boolean
     reason: string
@@ -28,14 +29,14 @@ interface AIRiskScoreProps {
   className?: string
 }
 
-export function AIRiskScore({ score, confidence, analysis, className }: AIRiskScoreProps) {
-  const getRiskLevel = (score: number) => {
-    if (score >= 80) return { level: 'Low Risk', color: 'emerald', icon: CheckCircle }
-    if (score >= 60) return { level: 'Medium Risk', color: 'amber', icon: AlertTriangle }
+export function AIRiskScore({ score, confidence, trustScore, analysis, className }: AIRiskScoreProps) {
+  const getRiskLevel = (ts: number) => {
+    if (ts > 60) return { level: 'Low Risk', color: 'emerald', icon: CheckCircle }
+    if (ts >= 30) return { level: 'Medium Risk', color: 'amber', icon: AlertTriangle }
     return { level: 'High Risk', color: 'rose', icon: XCircle }
   }
 
-  const riskLevel = getRiskLevel(score)
+  const riskLevel = getRiskLevel(trustScore ?? 100)
   const Icon = riskLevel.icon
 
   return (
@@ -46,7 +47,7 @@ export function AIRiskScore({ score, confidence, analysis, className }: AIRiskSc
           <div className={cn(
             "p-2 rounded-lg",
             riskLevel.color === 'emerald' && "bg-emerald-100",
-            riskLevel.color === 'amber' && "bg-amber-100", 
+            riskLevel.color === 'amber' && "bg-amber-100",
             riskLevel.color === 'rose' && "bg-rose-100"
           )}>
             <Icon className={cn(
@@ -71,32 +72,34 @@ export function AIRiskScore({ score, confidence, analysis, className }: AIRiskSc
         </Badge>
       </div>
 
-      {/* Risk Score Progress */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between text-sm">
-          <span className="font-medium text-slate-700">Risk Score</span>
-          <span className="font-bold text-lg">{score}/100</span>
+      {/* Trust Score Display */}
+      {trustScore !== undefined && (
+        <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100">
+          <div className="flex items-center gap-2">
+            <Shield className="h-4 w-4 text-slate-500" />
+            <span className="text-sm font-medium text-slate-700">User Trust Score</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className={cn(
+              "text-xl font-bold",
+              trustScore > 60 ? "text-emerald-600" :
+                trustScore >= 30 ? "text-amber-600" :
+                  "text-rose-600"
+            )}>
+              {trustScore}
+            </span>
+            <span className="text-sm text-slate-400">/ 100</span>
+          </div>
         </div>
-        <Progress 
-          value={score} 
-          className="h-3"
-          // @ts-ignore
-          style={{
-            '--progress-background': score >= 80 ? '#10b981' : score >= 60 ? '#f59e0b' : '#ef4444'
-          }}
-        />
-        <div className="flex justify-between text-xs text-slate-500">
-          <span>Safe</span>
-          <span>Caution</span>
-          <span>Risky</span>
-        </div>
-      </div>
+      )}
+
+
 
       {/* AI Analysis Result */}
       <div className={cn(
         "p-4 rounded-lg border",
-        analysis.match 
-          ? "bg-emerald-50 border-emerald-200" 
+        analysis.match
+          ? "bg-emerald-50 border-emerald-200"
           : "bg-rose-50 border-rose-200"
       )}>
         <div className="flex items-start gap-3">

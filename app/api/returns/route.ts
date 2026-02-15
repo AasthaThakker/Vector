@@ -54,34 +54,33 @@ export async function GET() {
     const returnsWithPricesAndRisk = await Promise.all(returns.map(async (returnItem) => {
       const order = returnItem.orderId as any;
       let productPrice = 0;
-      
+
       if (order && order.products) {
         const product = order.products.find((p: any) => p.productId === returnItem.productId);
         if (product) {
           productPrice = product.price;
         }
       }
-      
+
       // Get user trust score from database
       const { default: User } = await import('@/models/User');
       const user = await User.findById(returnItem.userId);
-      const trustScore = user?.trustScore || 100;
-      
-      // Get ML analysis results if available
-      const mlAnalysis = returnItem.mlAnalysisResult || {
-        fraudScore: 0.3,
-        confidence: 0.85,
-        riskLevel: 'low'
-      };
-      
+      const trustScore = user?.trustScore ?? 100;
+
+      // Derive risk from trustScore: >60 = low, 30-60 = medium, <30 = high
+      const riskScore = 100 - trustScore; // Invert: high trust = low risk
+      const riskLevel = trustScore > 60 ? 'low' : trustScore >= 30 ? 'medium' : 'high';
+      const aiConfidence = trustScore > 60 ? 0.90 : trustScore >= 30 ? 0.75 : 0.60;
+      const mlPrediction = trustScore > 60 ? 'LEGITIMATE' : trustScore >= 30 ? 'SUSPICIOUS' : 'FRAUD';
+
       return {
         ...returnItem.toObject(),
         price: productPrice,
-        trustScore, // User's trust score
-        riskScore: Math.round(mlAnalysis.fraudScore * 100), // Convert to 0-100 scale
-        aiConfidence: mlAnalysis.confidence,
-        mlRiskLevel: mlAnalysis.riskLevel,
-        mlPrediction: mlAnalysis.match !== false ? 'LEGITIMATE' : 'FRAUD'
+        trustScore,
+        riskScore,
+        aiConfidence,
+        mlRiskLevel: riskLevel,
+        mlPrediction
       };
     }));
 
@@ -95,7 +94,7 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     console.log("=== RETURN REQUEST START ===");
-    
+
     const session = await getSession();
     if (!session) {
       console.log("ERROR: No session found");
@@ -104,7 +103,7 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     console.log("Request body:", body);
-    
+
     const { orderId, productId, reason, description, imageUrl, returnMethod, dropboxLocation } = body;
 
     if (!orderId || !productId || !reason || !returnMethod) {
@@ -131,13 +130,13 @@ export async function POST(req: NextRequest) {
     // AI validation check for reason-description similarity using Python ML model
     if (reason && description) {
       console.log("Starting Python ML validation for:", { reason, description });
-      
+
       try {
         // Get user's return history for ML analysis
         const userReturns = await Return.find({ userId: session.userId })
           .sort({ createdAt: -1 })
           .limit(10); // Get last 10 returns for ML analysis
-        
+
         // Create new return object for ML prediction
         const newReturnData = {
           reason,
@@ -147,19 +146,19 @@ export async function POST(req: NextRequest) {
           orderId,
           productId
         };
-        
+
         // Process with ML model
         const mlResult = await processReturnWithML(newReturnData, session.userId);
         console.log("Python ML prediction result:", mlResult);
-        
+
         // Block submission if ML model detects high fraud risk
         if (mlResult.mlResult.prediction === "FRAUD" && mlResult.mlResult.risk_score > 0.7) {
           console.log("BLOCKED: Python ML detected high fraud risk");
-          return NextResponse.json({ 
-            error: `ML validation failed: High fraud risk detected (${mlResult.mlResult.risk_score}). Please contact support for assistance.` 
+          return NextResponse.json({
+            error: `ML validation failed: High fraud risk detected (${mlResult.mlResult.risk_score}). Please contact support for assistance.`
           }, { status: 400 });
         }
-        
+
         // Flag for manual review if suspicious or medium risk
         if (mlResult.mlResult.prediction === "SUSPICIOUS" || mlResult.mlResult.risk_score > 0.4) {
           console.log("FLAGGED: Python ML detected suspicious activity - will require manual review");
@@ -167,7 +166,7 @@ export async function POST(req: NextRequest) {
         } else {
           console.log("Python ML validation passed");
         }
-        
+
       } catch (error) {
         console.error("ERROR: Python ML validation failed:", error);
         // If ML fails completely, allow submission but log it
