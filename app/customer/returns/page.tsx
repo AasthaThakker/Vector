@@ -165,10 +165,7 @@ function ReturnsContent() {
         imageUrl = uploadData.imageUrl || "";
       }
 
-      const res = await fetch("/api/returns", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      const requestData = {
           orderId,
           productId: selectedProduct,
           reason,
@@ -176,11 +173,29 @@ function ReturnsContent() {
           imageUrl,
           returnMethod,
           dropboxLocation: returnMethod === "dropbox" ? dropboxLocation : "",
-        }),
+        };
+        
+        console.log("Sending request data:", requestData);
+
+      const res = await fetch("/api/returns", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(requestData),
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
+      console.log("API Response:", { status: res.status, data });
+      
+      if (!res.ok) {
+        // Check if it's an AI validation error
+        if (data.error && data.error.includes("AI validation failed")) {
+          alert("⚠️ AI predicts anomalies in your return request. The reason and description don't appear to match. Please contact support for submitting this return.");
+        } else {
+          console.error("API Error:", data.error);
+          alert(`Error: ${data.error}`);
+        }
+        return;
+      }
 
       if (data.return?.qrCodeData) {
         setQrCode(data.return.qrCodeData);

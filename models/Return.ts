@@ -3,6 +3,8 @@ import mongoose, { Schema, Document, Model } from "mongoose";
 export interface IAIAnalysis {
   match: boolean;
   confidence: number;
+  adjustedConfidence?: number;
+  behaviorAdjustedThreshold?: number;
   reason: string;
   analyzedAt: Date;
 }
@@ -39,6 +41,8 @@ const AIAnalysisSchema = new Schema<IAIAnalysis>(
   {
     match: Boolean,
     confidence: Number,
+    adjustedConfidence: Number,
+    behaviorAdjustedThreshold: Number,
     reason: String,
     analyzedAt: Date,
   },

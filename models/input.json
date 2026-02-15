@@ -1,0 +1,18 @@
+{
+  "orderId": "6990d76d45ad436c86c94f6a",
+  "productId": "TSHIRT-002",
+  "productName": "Graphic Print Tee",
+  "category": "tshirt",
+  "size": "L",
+  "color": "Black",
+  "price": 1322,
+  "reason": "wrong_size",
+  "description": "bad bad bad bad bad bad bad bad",
+  "imageUrl": "",
+  "returnMethod": "pickup",
+  "customerHistory": {
+    "previousReturns": 0,
+    "totalOrders": 0,
+    "accountAge": 0
+  }
+}

@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { imageUrl, description, returnId } = body;
+    const { imageUrl, description, returnId, userId, reason } = body;
 
     if (!imageUrl || !description || !returnId) {
       return NextResponse.json({ 
@@ -28,22 +28,35 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Return request not found" }, { status: 404 });
     }
 
+    // Use userId from request or fall back to return request userId
+    const targetUserId = userId || returnRequest.userId.toString();
+    const returnReason = reason || returnRequest.reason;
+
     // Verify ownership (admin can validate any return)
     if (session.role !== "admin" && session.role !== "warehouse" && 
         returnRequest.userId.toString() !== session.userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Perform AI validation
-    const validationResult: ValidationResult = await validateReturnWithGemini(imageUrl, description);
+    // Perform AI validation with user behavior context
+    const validationResult: ValidationResult = await validateReturnWithGemini(
+      imageUrl, 
+      description, 
+      targetUserId, 
+      returnReason
+    );
 
-    // Determine validation status based on AI result
+    // Determine validation status based on AI result and behavior-adjusted confidence
     let validationStatus: "approved" | "rejected_ai" | "manual_review";
     let fraudFlag = false;
+    
+    // Use behavior-adjusted values if available, otherwise use standard values
+    const confidence = validationResult.adjustedConfidence || validationResult.confidence;
+    const threshold = validationResult.behaviorAdjustedThreshold || 0.30;
 
-    if (validationResult.match && validationResult.confidence >= 0.30) {
+    if (validationResult.match && confidence >= threshold) {
       validationStatus = "approved";
-    } else if (!validationResult.match && validationResult.confidence >= 0.30) {
+    } else if (!validationResult.match && confidence >= threshold) {
       validationStatus = "rejected_ai";
       fraudFlag = true;
     } else {
@@ -59,6 +72,8 @@ export async function POST(req: NextRequest) {
       aiAnalysisResult: {
         match: validationResult.match,
         confidence: validationResult.confidence,
+        adjustedConfidence: validationResult.adjustedConfidence,
+        behaviorAdjustedThreshold: validationResult.behaviorAdjustedThreshold,
         reason: validationResult.reason,
         analyzedAt: new Date()
       }
@@ -84,7 +99,10 @@ export async function POST(req: NextRequest) {
       success: true,
       validationStatus,
       confidence: validationResult.confidence,
-      reason: validationResult.reason
+      adjustedConfidence: validationResult.adjustedConfidence,
+      behaviorAdjustedThreshold: validationResult.behaviorAdjustedThreshold,
+      reason: validationResult.reason,
+      behaviorScore: validationResult.behaviorScore
     });
 
   } catch (error) {

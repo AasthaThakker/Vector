@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { UserBehaviorService, UserBehaviorScore } from "./userBehaviorService";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
@@ -6,9 +7,17 @@ export interface ValidationResult {
   match: boolean;
   confidence: number;
   reason: string;
+  behaviorScore?: UserBehaviorScore;
+  adjustedConfidence?: number;
+  behaviorAdjustedThreshold?: number;
 }
 
-export async function validateReturnWithGemini(imageUrl: string, description: string): Promise<ValidationResult> {
+export async function validateReturnWithGemini(
+  imageUrl: string, 
+  description: string, 
+  userId?: string,
+  reason?: string
+): Promise<ValidationResult> {
   try {
     if (!process.env.GEMINI_API_KEY) {
       throw new Error("GEMINI_API_KEY not configured");
@@ -41,6 +50,8 @@ export async function validateReturnWithGemini(imageUrl: string, description: st
 Analyze the provided product image and the user's return description.
 
 Determine whether the description accurately matches the visible product condition or damage.
+
+${reason ? `Additional context: Return reason is "${reason}". Consider if the description aligns with this reason.` : ''}
 
 Return response in JSON format only:
 
@@ -89,9 +100,41 @@ User description: "${description}"`;
       // Ensure confidence is between 0 and 1
       parsedResult.confidence = Math.max(0, Math.min(1, parsedResult.confidence));
       
-      // Apply the 0.30 threshold rule (minimum 30% confidence required)
-      if (parsedResult.confidence < 0.30) {
-        parsedResult.match = false;
+      // Apply user behavior adjustments if userId is provided
+      let behaviorScore: UserBehaviorScore | undefined;
+      let adjustedConfidence = parsedResult.confidence;
+      let behaviorAdjustedThreshold = 0.30;
+      
+      if (userId) {
+        try {
+          behaviorScore = await UserBehaviorService.calculateUserBehaviorScore(userId);
+          const confidenceAdjustment = UserBehaviorService.getConfidenceAdjustment(behaviorScore);
+          const thresholdAdjustment = UserBehaviorService.getThresholdAdjustment(behaviorScore);
+          
+          // Apply confidence adjustment
+          adjustedConfidence = Math.max(0, Math.min(1, parsedResult.confidence * confidenceAdjustment));
+          
+          // Update threshold
+          behaviorAdjustedThreshold = thresholdAdjustment;
+          
+          // Re-evaluate match based on adjusted confidence and threshold
+          if (adjustedConfidence < behaviorAdjustedThreshold) {
+            parsedResult.match = false;
+          }
+          
+          parsedResult.behaviorScore = behaviorScore;
+          parsedResult.adjustedConfidence = adjustedConfidence;
+          parsedResult.behaviorAdjustedThreshold = behaviorAdjustedThreshold;
+          
+        } catch (behaviorError) {
+          console.error("Error calculating user behavior score:", behaviorError);
+          // Continue without behavior adjustments
+        }
+      } else {
+        // Apply the standard 0.30 threshold rule (minimum 30% confidence required)
+        if (parsedResult.confidence < 0.30) {
+          parsedResult.match = false;
+        }
       }
 
     } catch (parseError) {

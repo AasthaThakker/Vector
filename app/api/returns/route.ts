@@ -7,7 +7,7 @@ import Order from "@/models/Order";
 import QRCode from "qrcode";
 
 // Async function to trigger AI validation
-async function triggerAIValidation(returnId: string, imageUrl: string, description: string) {
+async function triggerAIValidation(returnId: string, imageUrl: string, description: string, userId: string, reason: string) {
   try {
     const validationResponse = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/ai/validate-return`, {
       method: 'POST',
@@ -17,7 +17,9 @@ async function triggerAIValidation(returnId: string, imageUrl: string, descripti
       body: JSON.stringify({
         imageUrl,
         description,
-        returnId
+        returnId,
+        userId,
+        reason
       })
     });
 
@@ -113,17 +115,25 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
+    console.log("=== RETURN REQUEST START ===");
+    
     const session = await getSession();
     if (!session) {
+      console.log("ERROR: No session found");
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body = await req.json();
+    console.log("Request body:", body);
+    
     const { orderId, productId, reason, description, imageUrl, returnMethod, dropboxLocation } = body;
 
     if (!orderId || !productId || !reason || !returnMethod) {
+      console.log("ERROR: Missing required fields", { orderId, productId, reason, returnMethod });
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
+
+    console.log("All required fields present, proceeding with validation");
 
     await connectDB();
 
@@ -137,6 +147,85 @@ export async function POST(req: NextRequest) {
     const product = order.products.find(p => p.productId === productId);
     if (!product) {
       return NextResponse.json({ error: "Product not found in order" }, { status: 404 });
+    }
+
+    // AI validation check for reason-description similarity
+    if (reason && description) {
+      console.log("Starting AI validation for:", { reason, description });
+      
+      // Use AI for semantic validation
+      try {
+        const openRouterResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": "Bearer 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",
+            "Content-Type": "application/json",
+            "HTTP-Referer": "http://localhost:3000",
+            "X-Title": "Return Validation System"
+          },
+          body: JSON.stringify({
+            "model": "openai/gpt-4o-mini",
+            "messages": [
+              {
+                "role": "system",
+                "content": `You are a return request validator. Determine if the description reasonably explains the return reason.
+
+VALID EXAMPLES:
+- wrong_size: "too tight", "too big", "doesn't fit", "this is too tight for me"
+- wrong_color: "color is wrong", "different color", "not the color I ordered"
+- defective: "broken", "not working", "stopped working", "damaged"
+- wrong_item: "wrong item", "not what I ordered", "incorrect product"
+
+INVALID EXAMPLES:
+- wrong_color: "broken", "too small", "doesn't work"
+- wrong_size: "wrong color", "defective", "not the right product"
+- defective: "wrong size", "don't like it", "changed my mind"
+
+Respond with ONLY "MATCH" or "MISMATCH". Be reasonable and practical.`
+              },
+              {
+                "role": "user",
+                "content": `Return Reason: ${reason}\nDescription: ${description}\n\nDoes this description reasonably explain the return reason? Respond MATCH or MISMATCH.`
+              }
+            ],
+            "temperature": 0.1,
+            "max_tokens": 10
+          })
+        });
+
+        console.log("OpenRouter response status:", openRouterResponse.status);
+        
+        if (!openRouterResponse.ok) {
+          const errorText = await openRouterResponse.text();
+          console.log("ERROR: OpenRouter API call failed:", openRouterResponse.status, errorText);
+          
+          // If API fails, allow submission but log the error
+          console.log("API failed, allowing submission for now");
+        } else {
+          const openRouterData = await openRouterResponse.json();
+          console.log("OpenRouter response data:", openRouterData);
+          
+          const aiResult = openRouterData.choices?.[0]?.message?.content?.trim().toUpperCase();
+          console.log("AI Result:", aiResult);
+
+          if (aiResult === 'MISMATCH') {
+            console.log("BLOCKED: AI detected mismatch");
+            return NextResponse.json({ 
+              error: "AI validation failed: Return reason and description do not match. Please contact support for assistance." 
+            }, { status: 400 });
+          } else if (aiResult && aiResult !== 'MATCH') {
+            console.log("Unclear AI response, allowing submission:", aiResult);
+          } else {
+            console.log("AI validation passed");
+          }
+        }
+      } catch (error) {
+        console.error("ERROR: AI validation failed:", error);
+        // If AI fails completely, allow submission but log it
+        console.log("AI validation error, allowing submission to continue");
+      }
+    } else {
+      console.log("Skipping AI validation - missing reason or description");
     }
 
     const returnRequest = await Return.create({
@@ -167,7 +256,13 @@ export async function POST(req: NextRequest) {
     // Trigger AI validation immediately if image and description are provided
     if (imageUrl && description) {
       // Run AI validation in background without blocking the response
-      triggerAIValidation(returnRequest._id.toString(), imageUrl, description).catch(error => {
+      triggerAIValidation(
+        returnRequest._id.toString(), 
+        imageUrl, 
+        description, 
+        session.userId, 
+        reason
+      ).catch(error => {
         console.error('Background AI validation failed:', error);
       });
     }
