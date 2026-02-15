@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { connectDB } from "@/lib/mongodb";
 import Return from "@/models/Return";
-import { validateReturnWithGemini, ValidationResult } from "@/lib/geminiReturnValidator";
+import { predictWithLocalModel } from "@/lib/mlPredictionService";
 
 export async function POST(req: NextRequest) {
   try {
@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { imageUrl, description, returnId, userId, reason } = body;
+    const { imageUrl, description, returnId } = body;
 
     if (!imageUrl || !description || !returnId) {
       return NextResponse.json({ 
@@ -28,35 +28,31 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Return request not found" }, { status: 404 });
     }
 
-    // Use userId from request or fall back to return request userId
-    const targetUserId = userId || returnRequest.userId.toString();
-    const returnReason = reason || returnRequest.reason;
-
     // Verify ownership (admin can validate any return)
     if (session.role !== "admin" && session.role !== "warehouse" && 
         returnRequest.userId.toString() !== session.userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Perform AI validation with user behavior context
-    const validationResult: ValidationResult = await validateReturnWithGemini(
-      imageUrl, 
-      description, 
-      targetUserId, 
-      returnReason
+    // Get user's return history for behavior analysis
+    const userReturns = await Return.find({ userId: returnRequest.userId })
+      .sort({ createdAt: -1 })
+      .limit(10); // Get last 10 returns for behavior analysis
+    
+    // Perform ML validation using local model
+    const mlResult = await predictWithLocalModel(
+      returnRequest.reason || '',
+      description,
+      userReturns
     );
 
-    // Determine validation status based on AI result and behavior-adjusted confidence
+    // Determine validation status based on ML result
     let validationStatus: "approved" | "rejected_ai" | "manual_review";
     let fraudFlag = false;
-    
-    // Use behavior-adjusted values if available, otherwise use standard values
-    const confidence = validationResult.adjustedConfidence || validationResult.confidence;
-    const threshold = validationResult.behaviorAdjustedThreshold || 0.30;
 
-    if (validationResult.match && confidence >= threshold) {
+    if (mlResult.match && mlResult.fraudScore < 0.4) {
       validationStatus = "approved";
-    } else if (!validationResult.match && confidence >= threshold) {
+    } else if (!mlResult.match && mlResult.fraudScore > 0.6) {
       validationStatus = "rejected_ai";
       fraudFlag = true;
     } else {
@@ -69,12 +65,12 @@ export async function POST(req: NextRequest) {
     await Return.findByIdAndUpdate(returnId, {
       validationStatus: validationStatus,
       fraudFlag: fraudFlag,
-      aiAnalysisResult: {
-        match: validationResult.match,
-        confidence: validationResult.confidence,
-        adjustedConfidence: validationResult.adjustedConfidence,
-        behaviorAdjustedThreshold: validationResult.behaviorAdjustedThreshold,
-        reason: validationResult.reason,
+      mlAnalysisResult: {
+        match: mlResult.match,
+        confidence: mlResult.confidence,
+        fraudScore: mlResult.fraudScore,
+        riskLevel: mlResult.riskLevel,
+        reason: mlResult.reason,
         analyzedAt: new Date()
       }
     });
@@ -87,7 +83,7 @@ export async function POST(req: NextRequest) {
         returnId: returnId,
         action: "AI validation completed",
         status: "success",
-        details: `Status: ${validationStatus}, Confidence: ${validationResult.confidence}, Reason: ${validationResult.reason}`,
+        details: `Status: ${validationStatus}, Confidence: ${mlResult.confidence}, Fraud Score: ${mlResult.fraudScore}, Risk Level: ${mlResult.riskLevel}, Reason: ${mlResult.reason}`,
         timestamp: new Date(),
       });
     } catch (logError) {
@@ -98,11 +94,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       validationStatus,
-      confidence: validationResult.confidence,
-      adjustedConfidence: validationResult.adjustedConfidence,
-      behaviorAdjustedThreshold: validationResult.behaviorAdjustedThreshold,
-      reason: validationResult.reason,
-      behaviorScore: validationResult.behaviorScore
+      confidence: mlResult.confidence,
+      fraudScore: mlResult.fraudScore,
+      riskLevel: mlResult.riskLevel,
+      reason: mlResult.reason
     });
 
   } catch (error) {
@@ -117,10 +112,12 @@ export async function POST(req: NextRequest) {
         await connectDB();
         await Return.findByIdAndUpdate(returnId, {
           validationStatus: "manual_review",
-          aiAnalysisResult: {
+          mlAnalysisResult: {
             match: false,
             confidence: 0,
-            reason: "AI validation service error - manual review required",
+            fraudScore: 0.5,
+            riskLevel: "medium",
+            reason: "ML validation service error - manual review required",
             analyzedAt: new Date()
           }
         });
@@ -130,7 +127,7 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ 
-      error: "AI validation service temporarily unavailable - return marked for manual review" 
+      error: "ML validation service temporarily unavailable - return marked for manual review" 
     }, { status: 500 });
   }
 }

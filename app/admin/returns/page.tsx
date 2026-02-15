@@ -52,16 +52,21 @@ export default function AdminReturns() {
   };
 
   const selectedReturn = returns.find((r: { 
-  _id: string; 
-  reason: string; 
-  status: string; 
-  returnMethod: string; 
-  createdAt: string;
-  price: number;
-  qrCodeData?: string;
-  aiAnalysis?: string;
-  orderId?: { products?: { name: string }[] };
-}) => r._id === selected);
+    _id: string; 
+    reason: string; 
+    status: string; 
+    returnMethod: string; 
+    createdAt: string;
+    price: number;
+    qrCodeData?: string;
+    aiAnalysis?: string;
+    orderId?: { products?: { name: string }[] };
+    trustScore?: number;
+    riskScore?: number;
+    aiConfidence?: number;
+    mlRiskLevel?: string;
+    mlPrediction?: string;
+  }) => r._id === selected);
 
   const statuses = [
     "all",
@@ -130,8 +135,11 @@ export default function AdminReturns() {
                   price: number;
                   qrCodeData?: string;
                   orderId?: { products?: { name: string }[] };
-                  riskScore?: number;
+                  trustScore?: number; // User's trust score
+                  riskScore?: number; // ML risk score
                   aiConfidence?: number;
+                  mlRiskLevel?: string;
+                  mlPrediction?: string;
                 }) => (
                   <GlassCard
                     key={ret._id}
@@ -147,6 +155,18 @@ export default function AdminReturns() {
                         <div className="flex items-center gap-2">
                           <p className="text-sm font-medium text-foreground">{ret.reason}</p>
                           <StatusBadge status={ret.status} />
+                          {/* Trust Score Indicator */}
+                          {ret.trustScore !== undefined && (
+                            <div className={cn(
+                              "flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium",
+                              ret.trustScore >= 80 ? "bg-emerald-100 text-emerald-700" :
+                              ret.trustScore >= 60 ? "bg-amber-100 text-amber-700" :
+                              "bg-rose-100 text-rose-700"
+                            )}>
+                              👤 {ret.trustScore}
+                              {ret.trustScore >= 80 ? "High Trust" : ret.trustScore >= 60 ? "Med Trust" : "Low Trust"}
+                            </div>
+                          )}
                           {/* Risk Indicator */}
                           {ret.riskScore && (
                             <div className={cn(
@@ -210,15 +230,15 @@ export default function AdminReturns() {
                   <p className="text-muted-foreground">Status</p>
                   <StatusBadge status={selectedReturn.status} />
                 </div>
-                {/* AI Risk Assessment */}
+                {/* AI Risk Assessment with Trust Score */}
                 <div className="space-y-3">
                   <p className="text-muted-foreground font-medium">AI Risk Assessment</p>
                   <AIRiskScore
                     score={selectedReturn.riskScore || 50}
                     confidence={selectedReturn.aiConfidence || 0.85}
                     analysis={{
-                      match: true,
-                      reason: `Risk assessment based on return reason: ${selectedReturn.reason}`,
+                      match: selectedReturn.mlPrediction !== 'FRAUD',
+                      reason: `ML Analysis: ${selectedReturn.mlPrediction || 'UNKNOWN'} (${selectedReturn.mlRiskLevel || 'UNKNOWN'} risk)`,
                       riskFactors: selectedReturn.reason === 'defective' ? ['Product defect detected', 'Quality control issue'] : 
                                    selectedReturn.reason === 'wrong_item' ? ['Incorrect item sent', 'Inventory mismatch'] :
                                    selectedReturn.reason === 'damaged_shipping' ? ['Shipping damage', 'Packaging issue'] :
@@ -231,6 +251,40 @@ export default function AdminReturns() {
                         'Return processed successfully'
                     }}
                   />
+                  
+                  {/* User Trust Score Display */}
+                  {selectedReturn.trustScore !== undefined && (
+                    <div className="mt-4 p-3 bg-secondary/50 rounded-lg">
+                      <p className="text-muted-foreground font-medium mb-2">User Trust Score</p>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className={cn(
+                            "text-2xl font-bold",
+                            selectedReturn.trustScore >= 80 ? "text-emerald-600" :
+                            selectedReturn.trustScore >= 60 ? "text-amber-600" :
+                            "text-rose-600"
+                          )}>
+                            {selectedReturn.trustScore}
+                          </div>
+                          <div className="text-sm text-muted-foreground">
+                            / 100
+                          </div>
+                        </div>
+                        <div className={cn(
+                          "px-3 py-1 rounded-full text-xs font-medium",
+                          selectedReturn.trustScore >= 80 ? "bg-emerald-100 text-emerald-700" :
+                          selectedReturn.trustScore >= 60 ? "bg-amber-100 text-amber-700" :
+                          "bg-rose-100 text-rose-700"
+                        )}>
+                          {selectedReturn.trustScore >= 80 ? "High Trust" : 
+                           selectedReturn.trustScore >= 60 ? "Medium Trust" : "Low Trust"}
+                        </div>
+                      </div>
+                      <div className="mt-2 text-xs text-muted-foreground">
+                        Trust score dynamically fetched from user table based on return history and ML predictions
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <div>
                   <p className="text-muted-foreground">Submitted</p>

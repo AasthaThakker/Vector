@@ -7,7 +7,8 @@ import { Progress } from '@/components/ui/progress'
 import { 
   Package, 
   CheckCircle, 
-  Clock
+  Clock,
+  Truck
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 

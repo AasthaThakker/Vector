@@ -1,28 +1,30 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
-import { UserBehaviorService, UserBehaviorScore } from "./userBehaviorService";
+/**
+ * Optional Gemini Return Validator (Fallback Service)
+ * 
+ * This service is now optional and only used as a fallback when the local ML model
+ * is not available or fails to provide a prediction.
+ */
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export interface ValidationResult {
   match: boolean;
   confidence: number;
   reason: string;
-  behaviorScore?: UserBehaviorScore;
-  adjustedConfidence?: number;
-  behaviorAdjustedThreshold?: number;
 }
 
-export async function validateReturnWithGemini(
-  imageUrl: string, 
-  description: string, 
-  userId?: string,
-  reason?: string
-): Promise<ValidationResult> {
+// Check if Gemini API is configured
+const isGeminiConfigured = () => {
+  return !!process.env.GEMINI_API_KEY;
+};
+
+export async function validateReturnWithGemini(imageUrl: string, description: string): Promise<ValidationResult> {
   try {
-    if (!process.env.GEMINI_API_KEY) {
+    if (!isGeminiConfigured()) {
       throw new Error("GEMINI_API_KEY not configured");
     }
 
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
     const model = genAI.getGenerativeModel({ model: "gemini-robotics-er-1.5-preview" });
 
     // Fetch image data from URL
@@ -50,8 +52,6 @@ export async function validateReturnWithGemini(
 Analyze the provided product image and the user's return description.
 
 Determine whether the description accurately matches the visible product condition or damage.
-
-${reason ? `Additional context: Return reason is "${reason}". Consider if the description aligns with this reason.` : ''}
 
 Return response in JSON format only:
 
@@ -100,41 +100,9 @@ User description: "${description}"`;
       // Ensure confidence is between 0 and 1
       parsedResult.confidence = Math.max(0, Math.min(1, parsedResult.confidence));
       
-      // Apply user behavior adjustments if userId is provided
-      let behaviorScore: UserBehaviorScore | undefined;
-      let adjustedConfidence = parsedResult.confidence;
-      let behaviorAdjustedThreshold = 0.30;
-      
-      if (userId) {
-        try {
-          behaviorScore = await UserBehaviorService.calculateUserBehaviorScore(userId);
-          const confidenceAdjustment = UserBehaviorService.getConfidenceAdjustment(behaviorScore);
-          const thresholdAdjustment = UserBehaviorService.getThresholdAdjustment(behaviorScore);
-          
-          // Apply confidence adjustment
-          adjustedConfidence = Math.max(0, Math.min(1, parsedResult.confidence * confidenceAdjustment));
-          
-          // Update threshold
-          behaviorAdjustedThreshold = thresholdAdjustment;
-          
-          // Re-evaluate match based on adjusted confidence and threshold
-          if (adjustedConfidence < behaviorAdjustedThreshold) {
-            parsedResult.match = false;
-          }
-          
-          parsedResult.behaviorScore = behaviorScore;
-          parsedResult.adjustedConfidence = adjustedConfidence;
-          parsedResult.behaviorAdjustedThreshold = behaviorAdjustedThreshold;
-          
-        } catch (behaviorError) {
-          console.error("Error calculating user behavior score:", behaviorError);
-          // Continue without behavior adjustments
-        }
-      } else {
-        // Apply the standard 0.30 threshold rule (minimum 30% confidence required)
-        if (parsedResult.confidence < 0.30) {
-          parsedResult.match = false;
-        }
+      // Apply the 0.30 threshold rule (minimum 30% confidence required)
+      if (parsedResult.confidence < 0.30) {
+        parsedResult.match = false;
       }
 
     } catch (parseError) {
@@ -145,7 +113,7 @@ User description: "${description}"`;
       return {
         match: false,
         confidence: 0,
-        reason: "AI analysis failed - manual review required"
+        reason: "Gemini AI analysis failed - manual review required"
       };
     }
 
@@ -158,7 +126,24 @@ User description: "${description}"`;
     return {
       match: false,
       confidence: 0,
-      reason: "AI validation service unavailable - manual review required"
+      reason: "Gemini AI validation service unavailable - manual review required"
     };
   }
+}
+
+/**
+ * Fallback validator that uses Gemini only when local ML fails
+ */
+export async function fallbackValidation(imageUrl: string, description: string): Promise<ValidationResult> {
+  if (!isGeminiConfigured()) {
+    console.log("Gemini API not configured, returning neutral fallback");
+    return {
+      match: false,
+      confidence: 0.5,
+      reason: "Local ML failed and Gemini not available - manual review required"
+    };
+  }
+
+  console.log("Using Gemini as fallback validation");
+  return await validateReturnWithGemini(imageUrl, description);
 }

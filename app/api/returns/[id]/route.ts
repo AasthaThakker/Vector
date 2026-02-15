@@ -4,6 +4,7 @@ import { connectDB } from "@/lib/mongodb";
 import Return from "@/models/Return";
 import AutomationLog from "@/models/AutomationLog";
 import QRCode from "qrcode";
+import { processReturnWithML } from "@/lib/mlPredictionService";
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -81,6 +82,25 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       details: `Updated by ${session.role} (${session.email})${status === "approved" ? " - QR code generated" : ""}`,
       timestamp: new Date(),
     });
+
+    // Update user trust score when return status changes (especially for approved/rejected)
+    if (["approved", "rejected"].includes(status)) {
+      // Process with ML model to update trust score based on final status
+      const returnData = {
+        _id: returnRequest._id,
+        reason: returnRequest.reason,
+        description: returnRequest.description,
+        price: returnRequest.price,
+        imageUrl: returnRequest.imageUrl,
+        status: status, // Updated status
+        orderId: returnRequest.orderId,
+        productId: returnRequest.productId
+      };
+      
+      processReturnWithML(returnData, returnRequest.userId.toString()).catch(error => {
+        console.error('Background ML processing failed:', error);
+      });
+    }
 
     return NextResponse.json({ return: updated });
   } catch (error) {
