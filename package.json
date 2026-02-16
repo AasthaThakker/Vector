@@ -70,6 +70,7 @@
     "@types/react-dom": "19.2.3"
   },
   "devDependencies": {
+    "@netlify/plugin-nextjs": "^5.15.8",
     "@tailwindcss/postcss": "^4.1.13",
     "@types/bcryptjs": "^2.4.6",
     "@types/jsonwebtoken": "^9.0.7",
