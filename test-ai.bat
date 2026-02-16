@@ -39,6 +39,27 @@ if %errorlevel% equ 0 (
 )
 del temp_health.json
 
+import mongoose from "mongoose";
+import { connectDB } from "@/lib/db";
+
+export async function GET() {
+  try {
+    await connectDB();
+
+    return Response.json({
+      success: true,
+      dbName: mongoose.connection.name,
+      host: mongoose.connection.host,
+      state: mongoose.connection.readyState
+    });
+  } catch (error: any) {
+    return Response.json({
+      success: false,
+      error: error.message
+    });
+  }
+}
+
 :: Run full AI validation tests
 echo.
 echo 3. Running AI validation tests...
